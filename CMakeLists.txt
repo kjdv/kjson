@@ -10,7 +10,7 @@ enable_testing()
 
 
 # dependencies:
-
+find_package(Results CONFIG REQUIRED)
 find_package(Composite CONFIG REQUIRED)
 
 
