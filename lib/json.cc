@@ -1,34 +1,30 @@
-#include <json/json.hh>
+#if 0
+#include "json.hh"
 #include "json_builder.hh"
 #include "json_compact_builder.hh"
 #include "parser.hh"
 #include <sstream>
 
-using namespace std;
-using namespace kdv::composite;
-using namespace kdv::json;
+namespace kjson {
 
-composite_ptr kdv::json::load(istream& input)
+using namespace std;
+
+result load(istream& input)
 {
   return parse(input);
 }
 
-composite_ptr kdv::json::load(string const& input)
+result load(string const& input)
 {
   istringstream str(input);
   return load(str);
 }
 
-void kdv::json::dump(const kdv::composite::composite& data, ostream& out, bool compact)
+void dump(const document& data, ostream& out, bool compact)
 {
-  if(compact)
-  {
-    json_compact_builder jb(out);
-    data.accept(jb);
-  }
-  else
-  {
-    json_builder jb(out);
-    data.accept(jb);
-  }
+  json_builder jb(out);
+  composite::apply(data, jb);
 }
+
+}
+#endif

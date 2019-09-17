@@ -11,6 +11,7 @@ enable_testing()
 
 # dependencies:
 find_package(Results CONFIG REQUIRED)
+find_package(Kb64 CONFIG REQUIRED)
 find_package(Composite CONFIG REQUIRED)
 
 

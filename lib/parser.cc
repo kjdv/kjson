@@ -3,6 +3,7 @@
 #include <cassert>
 #include <composite/builder.hh>
 
+#if 0
 using namespace std;
 using namespace kdv::json;
 
@@ -191,3 +192,5 @@ kdv::composite::composite_ptr kdv::json::parse(istream& input)
   parser p(input);
   return p.parse();
 }
+
+#endif

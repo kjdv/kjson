@@ -4,9 +4,8 @@
 #include <composite/visitor.hh>
 #include <iosfwd>
 
-namespace kdv {
-namespace json {
-class json_builder : public kdv::composite::visitor
+namespace kjson {
+class json_builder : public composite::visitor
 {
   std::ostream& d_stream;
   size_t        d_depth;
@@ -39,6 +38,9 @@ class json_builder : public kdv::composite::visitor
 
   void newline();
 
+  template <typename T>
+  void scalar(const T &value);
+
 public:
   explicit json_builder(std::ostream& stream)
     : d_stream(stream)
@@ -47,14 +49,16 @@ public:
   {
   }
 
-  virtual void visit(kdv::composite::scalar const& val) override;
-  virtual void visit(kdv::composite::sequence const& seq) override;
-  virtual void visit(kdv::composite::mapping const& map) override;
+  void visit(composite::deduce<void>::type) override;
+  void visit(composite::deduce<bool>::type) override;
+  void visit(composite::deduce<int>::type) override;
+  void visit(composite::deduce<double>::type) override;
+  void visit(std::string_view) override;
 
-  // optional
-  virtual void sentinel(kdv::composite::sequence const& seq) override;
-  virtual void sentinel(kdv::composite::mapping const& map) override;
-  virtual void visit_key(std::string const& key) override;
-};
+  void key(std::string_view) override;
+  void start_sequence() override;
+  void start_mapping() override;
+  void sentinel() override;
+ };
 }
-}
+

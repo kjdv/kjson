@@ -1,18 +1,11 @@
 #pragma once
 
-#include <composite/composite.hh>
 #include <iosfwd>
-#include <stdexcept>
+#include "json.hh"
 
-namespace kdv {
-namespace json {
+namespace kjson {
 
-class parse_error : public std::runtime_error
-{
-public:
-  using std::runtime_error::runtime_error;
-};
+result parse(std::istream& input);
 
-kdv::composite::composite_ptr parse(std::istream& input);
 }
-}
+

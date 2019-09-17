@@ -1,3 +1,4 @@
+#if 0
 #include "parser.hh"
 #include <composite/builder.hh>
 #include <gtest/gtest.h>
@@ -239,3 +240,4 @@ TEST(parser, mapping_nested)
   ASSERT_TRUE((bool)actual);
   EXPECT_EQ(*expected, *actual);
 }
+#endif

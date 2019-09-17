@@ -16,6 +16,6 @@ target_include_directories(kjson
 
 
 target_link_libraries(kjson
-    PUBLIC Composite::composite Results::results
+    PUBLIC Composite::composite Results::results Kb64::kb64
 )
 

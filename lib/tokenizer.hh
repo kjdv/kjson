@@ -2,21 +2,17 @@
 
 #include <iosfwd>
 #include <stack>
-#include <stdexcept>
 #include <string>
+#include <results/result.hh>
 
-namespace kdv {
-namespace json {
+namespace kjson {
 
-class tokenizer_error : public std::runtime_error
-{
-public:
-  using std::runtime_error::runtime_error;
-};
+template <typename T>
+using maybe_error = typename results::result<T, results::error>;
 
 struct token
 {
-  typedef enum {
+  enum class type_t {
     e_start_mapping,  // {
     e_end_mapping,    // }
     e_start_sequence, // [
@@ -30,7 +26,7 @@ struct token
     e_false, // false
     e_null,  // null
     e_eof,
-  } type_t;
+  };
 
   type_t      tok;
   std::string value;
@@ -53,6 +49,6 @@ struct token
   }
 };
 
-token next_token(std::istream& input);
+maybe_error<token> next_token(std::istream& input);
 }
-}
+

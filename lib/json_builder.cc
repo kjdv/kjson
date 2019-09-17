@@ -1,11 +1,24 @@
+#if 0
 #include "json_builder.hh"
-#include <base64/base64.hh>
+#include <kb64/base64.hh>
 #include <cassert>
-#include <stringutils/escape.hh>
+
+namespace kjson {
 
 using namespace std;
-using namespace kdv::composite;
-using namespace kdv::json;
+
+template <typename T>
+void json_builder::scalar(const T &value)
+{
+  if(needscomma())
+  {
+    d_stream << ',';
+    newline();
+  }
+  d_stream << value;
+  needscomma(true);
+}
+
 
 void json_builder::newline()
 {
@@ -14,36 +27,32 @@ void json_builder::newline()
     d_stream << "  ";
 }
 
-void json_builder::visit(const scalar& val)
+void json_builder::visit(composite::deduce<void>::type)
 {
-  if(toplevel())
-  {
-    // special case where the empty document is represented by one empty scalar
-    assert(val.value().empty());
-    d_stream << "{}\n";
-  }
-  else
-  {
-    if(needscomma())
-    {
-      d_stream << ',';
-      newline();
-    }
-
-    if(val.typehint() == scalar::e_int ||
-       val.typehint() == scalar::e_float ||
-       val.typehint() == scalar::e_bool ||
-       val.typehint() == scalar::e_null)
-      d_stream << val.value();
-    else if(val.typehint() == scalar::e_binary)
-      d_stream << '"' << kdv::base64::encode(val.as_binary()) << '"'; // todo: many copies
-    else
-      d_stream << kdv::stringutils::escape(val.value());
-    needscomma(true);
-  }
+  scalar("null");
 }
 
-void json_builder::visit(const sequence& seq)
+void json_builder::visit(composite::deduce<bool>::type value)
+{
+  scalar(value ? "true" : "false");
+}
+
+void json_builder::visit(composite::deduce<int>::type value)
+{
+  scalar(value);
+}
+
+void json_builder::visit(composite::deduce<double>::type value)
+{
+  scalar(value);
+}
+
+void json_builder::visit(string_view value)
+{
+  scalar(value);
+}
+
+void json_builder::start_sequence()
 {
   if(needscomma())
   {
@@ -57,7 +66,7 @@ void json_builder::visit(const sequence& seq)
   needscomma(false);
 }
 
-void json_builder::visit(const mapping& map)
+void json_builder::start_mapping()
 {
   if(needscomma())
   {
@@ -71,7 +80,7 @@ void json_builder::visit(const mapping& map)
   needscomma(false);
 }
 
-void json_builder::sentinel(const sequence& seq)
+void json_builder::sentinel()
 {
   decdepth();
   newline();
@@ -106,3 +115,6 @@ void json_builder::visit_key(const string& key)
   d_stream << '"' << key << '"' << ": ";
   needscomma(false);
 }
+
+}
+#endif

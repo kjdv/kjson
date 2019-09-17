@@ -1,3 +1,4 @@
+#if 0
 #include <json/json.hh>
 #include "json_compact_builder.hh"
 #include <composite/builder.hh>
@@ -78,3 +79,4 @@ INSTANTIATE_TEST_CASE_P(test_json_compact_builder,
                         json_compact_builder_test,
                         testing::ValuesIn(json_testcases));
 }
+#endif
