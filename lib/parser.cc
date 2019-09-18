@@ -2,33 +2,43 @@
 #include "tokenizer.hh"
 #include <cassert>
 #include <composite/builder.hh>
+#include <optional>
 
-#if 0
+namespace kjson {
+
 using namespace std;
-using namespace kdv::json;
-
-typedef kdv::composite::scalar::type_t hint_t;
 
 namespace {
+
+template <typename T>
+T from_string(const string &v)
+{
+  stringstream stream{v};
+  T r;
+  stream >> r;
+  return r;
+}
 
 class parser
 {
 public:
   parser(istream& input)
     : d_stream(input)
-    , d_token(token::e_eof)
+    , d_token(token::type_t::e_eof)
   {
   }
 
-  kdv::composite::composite_ptr parse();
+  result parse();
 
 private:
   bool mapping();
   bool sequence();
-  bool value();
+  bool value(const optional<string> &key = nullopt);
   bool elements();
   bool members();
   bool pair();
+
+  std::optional<composite::composite> extract_value();
 
   token const& current() const
   {
@@ -37,43 +47,53 @@ private:
 
   void advance()
   {
-    if(!d_builder.empty()) // optimization: don't read anything more if we don't expect anything (can be relevant on blocking io)
-      d_token = next_token(d_stream);
+    if(!d_err.has_value())
+    {
+      next_token(d_stream).match(
+          [this](auto&& tok) { d_token = tok; },
+          [this](auto&& err) { d_err = err; });
+
+    }
   }
 
   void start()
   {
-    d_token = next_token(d_stream);
+    d_err.reset();
+    advance();
   }
 
-  istream&                          d_stream;
-  kdv::composite::key_aware_builder d_builder;
-  token                             d_token;
+  istream&           d_stream;
+  composite::builder d_builder;
+  token              d_token;
+  optional<results::error> d_err;
 };
 
-kdv::composite::composite_ptr parser::parse()
+result parser::parse()
 {
   start();
 
-  if(mapping() ||
+  if((mapping() ||
      sequence() ||
-     value())
-    return d_builder.build();
+      value()) && !d_err.has_value())
+    return results::make_ok<document>(d_builder.build());
   else
-    return kdv::composite::composite_ptr();
+    return results::make_err<document>(d_err.value_or(results::error{"no valid document"}));
 }
 
 bool parser::mapping()
 {
-  if(current().tok == token::e_start_mapping)
+  if(current().tok == token::type_t::e_start_mapping)
   {
     d_builder.push_mapping();
     advance();
 
     members();
 
-    if(current().tok != token::e_end_mapping)
-      throw parse_error("expected '}'");
+    if(current().tok != token::type_t::e_end_mapping)
+    {
+      d_err = results::error{"expected '}'"};
+      return false;
+    }
 
     d_builder.pop();
     advance();
@@ -84,15 +104,18 @@ bool parser::mapping()
 
 bool parser::sequence()
 {
-  if(current().tok == token::e_start_sequence)
+  if(current().tok == token::type_t::e_start_sequence)
   {
     d_builder.push_sequence();
     advance();
 
     elements();
 
-    if(current().tok != token::e_end_sequence)
-      throw parse_error("expected ']'");
+    if(current().tok != token::type_t::e_end_sequence)
+    {
+      d_err = results::error{"expected ']'"};
+      return false;
+    }
 
     d_builder.pop();
     advance();
@@ -102,51 +125,54 @@ bool parser::sequence()
   return false;
 }
 
-bool parser::value()
+bool parser::value(const optional<string> &key)
 {
   if(mapping() ||
      sequence())
     return true;
 
-  hint_t h = hint_t::e_unspecified;
+  auto value = extract_value();
+  if (!value.has_value())
+    return false;
+
+  advance();
+
+  if (key.has_value())
+    d_builder.with(*key, move(*value));
+  else
+    d_builder.with(move(*value));
+
+  return true;
+}
+
+std::optional<composite::composite> parser::extract_value()
+{
+  using cmp = composite::composite;
 
   switch(current().tok)
   {
-  case token::e_int:
-    h = hint_t::e_int;
-    break;
-  case token::e_float:
-    h = hint_t::e_float;
-    break;
-  case token::e_string:
-    h = hint_t::e_string;
-    break;
-  case token::e_true:
-    h = hint_t::e_bool;
-    break;
-  case token::e_false:
-    h = hint_t::e_bool;
-    break;
-  case token::e_null:
-    h = hint_t::e_null;
-    break;
+  case token::type_t::e_int:
+    return cmp(from_string<int64_t>(current().value));
+  case token::type_t::e_float:
+    return cmp(from_string<double>(current().value));
+  case token::type_t::e_string:
+    return cmp(current().value);
+  case token::type_t::e_true:
+    return cmp(true);
+  case token::type_t::e_false:
+    return cmp(false);
+  case token::type_t::e_null:
+    return cmp(composite::none{});
   default:
-    return false;
+    return nullopt;
   }
-
-  assert(h != hint_t::e_unspecified);
-
-  d_builder.with(current().value, h);
-  advance();
-
-  return true;
 }
 
 bool parser::elements()
 {
   while(value())
   {
-    if(current().tok == token::e_separator)
+    if(current().tok == token::type_t::e_separator)
       advance();
     else
       break;
@@ -158,7 +184,7 @@ bool parser::members()
 {
   while(pair())
   {
-    if(current().tok == token::e_separator)
+    if(current().tok == token::type_t::e_separator)
       advance();
     else
       break;
@@ -168,18 +194,24 @@ bool parser::members()
 
 bool parser::pair()
 {
-  if(current().tok == token::e_string)
+  if(current().tok == token::type_t::e_string)
   {
-    d_builder.with_key(current().value);
+    string key = current().value;
     advance();
 
-    if(current().tok != token::e_mapper)
-      throw parse_error("expected ':'");
+    if(current().tok != token::type_t::e_mapper)
+    {
+      d_err = results::error{"expected ':'"};
+      return false;
+    }
 
     advance();
 
-    if(!value())
-      throw parse_error("value expected after ':'");
+    if(!value(key))
+    {
+      d_err = results::error{"value expected after ':'"};
+      return false;
+    }
 
     return true;
   }
@@ -187,10 +219,10 @@ bool parser::pair()
 }
 }
 
-kdv::composite::composite_ptr kdv::json::parse(istream& input)
+result parse(istream& input)
 {
   parser p(input);
   return p.parse();
 }
 
-#endif
+}

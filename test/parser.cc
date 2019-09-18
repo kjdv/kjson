@@ -1,227 +1,162 @@
-#if 0
 #include "parser.hh"
-#include <composite/builder.hh>
+#include <composite/make.hh>
 #include <gtest/gtest.h>
 #include <sstream>
 
+namespace kjson {
+namespace {
+
 using namespace std;
-using namespace kdv::composite;
-using namespace kdv::json;
+using namespace composite;
 
 TEST(parser, plain_int)
 {
-  composite_cptr expected =
-      builder().with("148").build();
-
+  auto expected = make(148);
   istringstream input(" 148 ");
 
-  composite_ptr actual = parse(input);
+  auto actual = parse(input);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
 
 TEST(parser, plain_float)
 {
-  composite_cptr expected =
-      builder().with("3.14").build();
+  auto expected = make(3.14);
+  istringstream input(" 3.14 ");
 
-  istringstream input("3.14");
+  auto actual = parse(input);
 
-  composite_ptr actual = parse(input);
-
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
+
 
 TEST(parser, plain_string)
 {
-  composite_cptr expected =
-      builder().with("blah blah").build();
-
+  auto expected = make("blah blah");
   istringstream input("\"blah blah\"");
 
-  composite_ptr actual = parse(input);
+  auto actual = parse(input);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
 
 TEST(parser, plain_true)
 {
-  composite_cptr expected =
-      builder().with("true").build();
-
+  auto expected = make(true);
   istringstream input("true");
 
-  composite_ptr actual = parse(input);
+  auto actual = parse(input);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
 
 TEST(parser, plain_false)
 {
-  composite_cptr expected =
-      builder().with("false").build();
-
+  auto expected = make(false);
   istringstream input("false");
 
-  composite_ptr actual = parse(input);
+  auto actual = parse(input);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
 
 TEST(parser, plain_null)
 {
-  composite_cptr expected =
-      builder().with("null").build();
-
+  auto expected = make(none{});
   istringstream input("null");
 
-  composite_ptr actual = parse(input);
+  auto actual = parse(input);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
 
 TEST(parser, sequence)
 {
-  composite_cptr expected =
-      builder()
-          .push_sequence()
-          .with(1)
-          .with(2)
-          .with(3)
-          .build();
+  auto expected = make_seq(1, 2, 3);
   const string input = "[1, 2, 3]";
 
   istringstream stream(input);
-  composite_ptr actual = parse(stream);
+  auto actual = parse(stream);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
 
 TEST(parser, sequence_empty)
 {
-  composite_cptr expected =
-      builder()
-          .push_sequence()
-          .build();
+  auto expected = make_seq();
   const string input = "[]";
 
   istringstream stream(input);
-  composite_ptr actual = parse(stream);
+  auto actual = parse(stream);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
 
 TEST(parser, sequence_trailing_comma)
 {
-  composite_cptr expected =
-      builder()
-          .push_sequence()
-          .with(1)
-          .with(2)
-          .with(3)
-          .build();
+  auto expected = make_seq(1, 2, 3);
   const string input = "[1, 2, 3, ]";
 
   istringstream stream(input);
-  composite_ptr actual = parse(stream);
+  auto actual = parse(stream);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
 
 TEST(parser, sequence_nested)
 {
-  composite_cptr expected =
-      builder()
-          .push_sequence()
-          .with(1)
-          .push_sequence()
-          .with(2)
-          .with(3)
-          .pop()
-          .with(4)
-          .with(5)
-          .build();
+  auto expected = make_seq(1, make_seq(2, 3), 4, 5);
   const string input = "[1, [2, 3], 4, 5]";
 
   istringstream stream(input);
-  composite_ptr actual = parse(stream);
+  auto actual = parse(stream);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
 
 TEST(parser, mapping)
 {
-  composite_cptr expected =
-      builder()
-          .push_mapping()
-          .with("key", "value")
-          .build();
+  auto expected = make_map("key", "value");
   const string input = "{\"key\": \"value\"}";
 
   istringstream stream(input);
-  composite_ptr actual = parse(stream);
+  auto actual = parse(stream);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
 
 TEST(parser, mapping_empty)
 {
-  composite_cptr expected =
-      builder()
-          .push_mapping()
-          .build();
+  auto expected = make_map();
   const string input = "{ }";
 
   istringstream stream(input);
-  composite_ptr actual = parse(stream);
+  auto actual = parse(stream);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
 
 TEST(parser, mapping_trailing_comma)
 {
-  composite_cptr expected =
-      builder()
-          .push_mapping()
-          .with("key", "value")
-          .with("pi", 3.1459)
-          .with("e", 2.7182)
-          .build();
+  auto expected = make_map("key", "value", "pi", 3.1459, "e", 2.7182);
   const string input = "{\"key\": \"value\", \"pi\" : 3.145900, \"e\" : 2.718200, }";
 
   istringstream stream(input);
-  composite_ptr actual = parse(stream);
+  auto actual = parse(stream);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
 
 TEST(parser, mapping_nested)
 {
-  composite_cptr expected =
-      builder()
-          .push_mapping()
-          .with("key", "value")
-          .with("pi", 3.1459)
-          .push_mapping("nest")
-          .with("one", 1)
-          .with("two", 2)
-          .with("three", 3)
-          .pop()
-          .with("e", 2.7182)
-          .build();
+  auto expected = make_map(
+      "key", "value",
+      "pi", 3.1459,
+      "nest", make_map(
+          "one", 1,
+          "two", 2,
+          "three", 3),
+      "e", 27182);
 
   const string input =
       "{\"key\": \"value\",\n"
@@ -235,9 +170,11 @@ TEST(parser, mapping_nested)
       "}";
 
   istringstream stream(input);
-  composite_ptr actual = parse(stream);
+  auto actual = parse(stream);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
+
 }
-#endif
+
+}
+}
