@@ -156,7 +156,7 @@ TEST(parser, mapping_nested)
           "one", 1,
           "two", 2,
           "three", 3),
-      "e", 27182);
+      "e", 2.7182);
 
   const string input =
       "{\"key\": \"value\",\n"

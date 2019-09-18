@@ -31,8 +31,8 @@ public:
   result parse();
 
 private:
-  bool mapping();
-  bool sequence();
+  bool mapping(const optional<string> &key = nullopt);
+  bool sequence(const optional<string> &key = nullopt);
   bool value(const optional<string> &key = nullopt);
   bool elements();
   bool members();
@@ -80,11 +80,14 @@ result parser::parse()
     return results::make_err<document>(d_err.value_or(results::error{"no valid document"}));
 }
 
-bool parser::mapping()
+bool parser::mapping(const optional<string> &key)
 {
   if(current().tok == token::type_t::e_start_mapping)
   {
-    d_builder.push_mapping();
+    if (key.has_value())
+      d_builder.push_mapping(*key);
+    else
+      d_builder.push_mapping();
     advance();
 
     members();
@@ -102,11 +105,14 @@ bool parser::mapping()
   return false;
 }
 
-bool parser::sequence()
+bool parser::sequence(const optional<string> &key)
 {
   if(current().tok == token::type_t::e_start_sequence)
   {
-    d_builder.push_sequence();
+    if (key.has_value())
+      d_builder.push_sequence(*key);
+    else
+      d_builder.push_sequence();
     advance();
 
     elements();
@@ -127,8 +133,8 @@ bool parser::sequence()
 
 bool parser::value(const optional<string> &key)
 {
-  if(mapping() ||
-     sequence())
+  if(mapping(key) ||
+     sequence(key))
     return true;
 
   auto value = extract_value();
