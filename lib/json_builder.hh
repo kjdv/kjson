@@ -1,64 +1,40 @@
 #pragma once
 
 #include <composite/composite.hh>
-#include <composite/visitor.hh>
 #include <iosfwd>
 
 namespace kjson {
-class json_builder : public composite::visitor
-{
-  std::ostream& d_stream;
-  size_t        d_depth;
-  bool          d_needscomma;
 
-  bool needscomma() const
-  {
-    return d_needscomma;
-  }
-
-  void needscomma(bool val)
-  {
-    d_needscomma = val;
-  }
-
-  bool toplevel() const
-  {
-    return !d_depth;
-  }
-
-  void incdepth()
-  {
-    ++d_depth;
-  }
-
-  void decdepth()
-  {
-    --d_depth;
-  }
-
-  void newline();
-
-  template <typename T>
-  void scalar(const T &value);
-
+class json_builder {
 public:
-  explicit json_builder(std::ostream& stream)
-    : d_stream(stream)
-    , d_depth(0)
-    , d_needscomma(false)
-  {
-  }
+  explicit json_builder(std::ostream &out, bool compact = false);
 
-  void visit(composite::deduce<void>::type) override;
-  void visit(composite::deduce<bool>::type) override;
-  void visit(composite::deduce<int>::type) override;
-  void visit(composite::deduce<double>::type) override;
-  void visit(std::string_view) override;
+  void operator()(composite::none);
 
-  void key(std::string_view) override;
-  void start_sequence() override;
-  void start_mapping() override;
-  void sentinel() override;
- };
+  void operator()(composite::bool_t v);
+
+  void operator()(composite::int_t v);
+
+  void operator()(composite::float_t v);
+
+  void operator()(const std::string &v);
+
+  void operator()(const composite::sequence &v);
+
+  void operator()(const composite::mapping &v);
+
+private:
+  template <typename T>
+  void scalar(const T &v);
+
+  void comma();
+  void newline();
+  void element();
+
+  std::ostream &d_out;
+  bool d_compact{false};
+  bool d_needscomma{false};
+  unsigned d_indent{0};
+};
+
 }
-

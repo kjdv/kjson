@@ -1,11 +1,12 @@
 #include "json.hh"
-#include <composite/builder.hh>
+#include <composite/make.hh>
 #include <gtest/gtest.h>
 
-#if 0
+namespace kjson {
+namespace {
+
 using namespace std;
-using namespace kdv::composite;
-using namespace kdv::json;
+using namespace composite;
 
 TEST(toplevel, load)
 {
@@ -16,31 +17,25 @@ TEST(toplevel, load)
       "    \"string\",\n"
       "    1,\n"
       "    true,\n"
-      "    {\"pi\":314,\"e\":271},\n"
+      "    {\"pi\":3.14,\"e\":2.71},\n"
       "  ],\n"
       "  \"foo\" : \"bar\"\n"
       "}";
 
-  composite_cptr expected =
-      builder()
-          .push_mapping()
-          .with("key", "value")
-          .push_sequence("list")
-          .with("string")
-          .with(1)
-          .with("true")
-          .push_mapping()
-          .with("pi", 314)
-          .with("e", 271)
-          .pop()
-          .pop()
-          .with("foo", "bar")
-          .build();
+  auto expected = make_map(
+      "key", "value",
+      "list", make_seq(
+          "string",
+          1,
+          true,
+          make_map(
+              "pi", 3.14,
+              "e", 2.71)),
+      "foo", "bar");
 
-  composite_ptr actual = load(document);
+  auto actual = load(document);
 
-  ASSERT_TRUE((bool)actual);
-  EXPECT_EQ(*expected, *actual);
+  EXPECT_EQ(expected, actual.unwrap());
 }
 
 TEST(toplevel, incomplete)
@@ -53,6 +48,9 @@ TEST(toplevel, incomplete)
       "    \"string\",\n"
       "    1,\n";
 
-  EXPECT_THROW(load(document), std::runtime_error);
+  auto actual = load(document);
+  EXPECT_TRUE(actual.is_err());
 }
-#endif
+
+}
+}

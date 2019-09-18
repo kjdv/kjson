@@ -1,7 +1,5 @@
-#if 0
 #include "json.hh"
 #include "json_builder.hh"
-#include "json_compact_builder.hh"
 #include "parser.hh"
 #include <sstream>
 
@@ -23,8 +21,7 @@ result load(string const& input)
 void dump(const document& data, ostream& out, bool compact)
 {
   json_builder jb(out);
-  composite::apply(data, jb);
+  data.visit(jb);
 }
 
 }
-#endif

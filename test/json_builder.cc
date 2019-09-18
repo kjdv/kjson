@@ -1,14 +1,15 @@
 #include "json.hh"
 #include "json_builder.hh"
-#include <composite/builder.hh>
+#include <composite/make.hh>
 #include <composite/composite.hh>
 #include <gtest/gtest.h>
 #include <sstream>
 
-#if 0
+namespace kjson {
+namespace {
+
 using namespace std;
-using namespace kdv::composite;
-using namespace kdv::json;
+using namespace composite;
 
 struct json_testcase
 {
@@ -23,18 +24,16 @@ inline ostream& operator<<(ostream& out, json_testcase const& tc)
 
 class json_builder_test : public testing::TestWithParam<json_testcase>
 {
-  composite_cptr d_data;
+  document d_data;
 
 public:
   json_builder_test()
-    : d_data(load(GetParam().input))
-  {
-    assert(d_data);
-  }
+    : d_data(load(GetParam().input).unwrap())
+  {}
 
-  composite const& data() const
+  document const& data() const
   {
-    return *d_data;
+    return d_data;
   }
 };
 
@@ -42,7 +41,7 @@ TEST_P(json_builder_test, writing)
 {
   ostringstream stream;
   json_builder  jb(stream);
-  data().accept(jb);
+  data().visit(jb);
 
   EXPECT_EQ(GetParam().output, stream.str());
 }
@@ -51,22 +50,20 @@ TEST_P(json_builder_test, reading)
 {
   ostringstream stream;
   json_builder  jb(stream);
-  data().accept(jb);
+  data().visit(jb);
 
-  composite_cptr actual = load(stream.str());
-  ASSERT_TRUE((bool)actual);
-
-  EXPECT_EQ(data(), *actual);
+  auto actual = load(stream.str());
+  EXPECT_EQ(data(), actual.unwrap());
 }
 
 json_testcase json_testcases[] = {
     {"{}",
-     "{\n  \n}\n"},
+     "{\n}\n"},
     {"{\"aap\": \"noot\"}\n",
      "{\n"
      "  \"aap\": \"noot\"\n"
      "}\n"},
-    {"{\"list\": [1, 2, 3]}\n",
+  /*  {"{\"list\": [1, 2, 3]}\n",
      "{\n"
      "  \"list\": [\n"
      "    1,\n"
@@ -100,26 +97,13 @@ json_testcase json_testcases[] = {
      "  {\n"
      "    \"key\": 2\n"
      "  }\n"
-     "]\n"}};
+     "]\n"}*/
 
-INSTANTIATE_TEST_CASE_P(test_json_builder,
+};
+
+INSTANTIATE_TEST_SUITE_P(test_json_builder,
                         json_builder_test,
                         testing::ValuesIn(json_testcases));
 
-TEST(typehint, base64)
-{
-  const string plaintext = "Klaas was hier!\n";
-  const string encoded   = "S2xhYXMgd2FzIGhpZXIhCg==";
-
-  composite_cptr message =
-      builder().push_mapping().with("binary", plaintext, scalar::e_binary).build();
-
-  const string expected = string("{\n  \"binary\": \"") + encoded + "\"\n}\n";
-
-  ostringstream stream;
-  dump(*message, stream, false);
-
-  EXPECT_EQ(expected, stream.str());
 }
-
-#endif
+}
