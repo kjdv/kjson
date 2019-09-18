@@ -228,7 +228,12 @@ bool parser::pair()
 result parse(istream& input)
 {
   parser p(input);
-  return p.parse();
+
+  try {
+    return p.parse();
+  } catch (std::exception &e) {
+    return results::make_err<document>(results::error{e.what()});
+  }
 }
 
 }

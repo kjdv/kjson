@@ -176,5 +176,30 @@ TEST(parser, mapping_nested)
 
 }
 
+TEST(parser, bad_mapping)
+{
+  istringstream stream("{");
+  EXPECT_TRUE(parse(stream).is_err());
+}
+
+TEST(parser, bad_sequence)
+{
+  istringstream stream("[1,");
+  EXPECT_TRUE(parse(stream).is_err());
+}
+
+TEST(parser, no_document)
+{
+  istringstream stream("<>");
+  EXPECT_TRUE(parse(stream).is_err());
+}
+
+TEST(parser, bad_values)
+{
+  istringstream stream("{1,2,3}");
+  EXPECT_TRUE(parse(stream).is_err());
+}
+
+
 }
 }
