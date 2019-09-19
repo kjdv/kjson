@@ -1,4 +1,5 @@
 #include "json_builder.hh"
+#include "escape.hh"
 #include <ostream>
 
 namespace kjson {
@@ -22,9 +23,9 @@ void json_builder::operator()(composite::float_t v)
   scalar(v);
 }
 
-void json_builder::operator()(const std::string &v)
+void json_builder::operator()(std::string_view v)
 {
-  scalar(v);
+  scalar(escape(v));
 }
 
 void json_builder::operator()(const composite::sequence &v)
@@ -52,7 +53,7 @@ void json_builder::operator()(const composite::mapping &v)
   {
     newline();
 
-    scalar(kv.first);
+    scalar(escape(kv.first));
     element();
     d_needscomma = false;
     kv.second.visit(*this);
@@ -77,7 +78,7 @@ void json_builder::newline()
   {
     d_out << '\n';
     for (unsigned i = 0; i < d_indent; ++i)
-      d_out << "    ";
+      d_out << "  ";
   }
 }
 

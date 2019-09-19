@@ -17,7 +17,7 @@ public:
 
   void operator()(composite::float_t v);
 
-  void operator()(const std::string &v);
+  void operator()(std::string_view v);
 
   void operator()(const composite::sequence &v);
 
