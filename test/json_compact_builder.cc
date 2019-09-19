@@ -1,14 +1,14 @@
-#if 0
-#include <json/json.hh>
-#include "json_compact_builder.hh"
-#include <composite/builder.hh>
+#include "json.hh"
+#include "json_builder.hh"
+#include <composite/make.hh>
 #include <composite/composite.hh>
 #include <gtest/gtest.h>
 #include <sstream>
 
+namespace kjson {
+namespace {
+
 using namespace std;
-using namespace kdv::composite;
-using namespace kdv::json;
 
 namespace {
 
@@ -25,26 +25,24 @@ inline ostream& operator<<(ostream& out, json_testcase const& tc)
 
 class json_compact_builder_test : public testing::TestWithParam<json_testcase>
 {
-  composite_cptr d_data;
+  document d_data;
 
 public:
   json_compact_builder_test()
-    : d_data(load(GetParam().input))
-  {
-    assert(d_data);
-  }
+    : d_data(load(GetParam().input).unwrap())
+  {}
 
-  composite const& data() const
+  document const& data() const
   {
-    return *d_data;
+    return d_data;
   }
 };
 
 TEST_P(json_compact_builder_test, writing)
 {
   ostringstream        stream;
-  json_compact_builder jb(stream);
-  data().accept(jb);
+  json_builder jb(stream, true);
+  data().visit(jb);
 
   EXPECT_EQ(GetParam().output, stream.str());
 }
@@ -52,13 +50,12 @@ TEST_P(json_compact_builder_test, writing)
 TEST_P(json_compact_builder_test, reading)
 {
   ostringstream        stream;
-  json_compact_builder jb(stream);
-  data().accept(jb);
+  json_builder jb(stream, true);
+  data().visit(jb);
 
-  composite_cptr actual = load(stream.str());
-  ASSERT_TRUE((bool)actual);
+  auto actual = load(stream.str());
 
-  EXPECT_EQ(data(), *actual);
+  EXPECT_EQ(data(), actual.unwrap());
 }
 
 json_testcase json_testcases[] = {
@@ -75,8 +72,10 @@ json_testcase json_testcases[] = {
     {"[{\"key\" : 1}, {\"key\" : 2}]",
      "[{\"key\":1},{\"key\":2}]"}};
 
-INSTANTIATE_TEST_CASE_P(test_json_compact_builder,
-                        json_compact_builder_test,
-                        testing::ValuesIn(json_testcases));
+INSTANTIATE_TEST_SUITE_P(test_json_compact_builder,
+                         json_compact_builder_test,
+                         testing::ValuesIn(json_testcases));
 }
-#endif
+
+}
+}
