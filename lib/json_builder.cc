@@ -34,11 +34,19 @@ void json_builder::operator()(const composite::sequence &v)
 
   d_out << '[';
   d_needscomma = false;
+  ++d_indent;
+  newline();
 
   for (auto && item : v)
     item.visit(*this);
+
+  --d_indent;
+  newline();
   d_out << ']';
-  d_needscomma = false;
+
+  if (toplevel())
+    newline();
+  d_needscomma = true;
 }
 
 void json_builder::operator()(const composite::mapping &v)
@@ -48,12 +56,11 @@ void json_builder::operator()(const composite::mapping &v)
   d_out << '{';
   d_needscomma = false;
   ++d_indent;
+  newline();
 
   for (auto && kv : v)
   {
-    newline();
-
-    scalar(escape(kv.first));
+    d_out << escape(kv.first);
     element();
     d_needscomma = false;
     kv.second.visit(*this);
@@ -62,14 +69,19 @@ void json_builder::operator()(const composite::mapping &v)
   --d_indent;
   newline();
   d_out << '}';
-  newline();
-  d_needscomma = false;
+
+  if (toplevel())
+    newline();
+  d_needscomma = true;
 }
 
 void json_builder::comma()
 {
   if (d_needscomma)
-    d_out << (d_compact ? "," : ", ");
+  {
+    d_out << ",";
+    newline();
+  }
 }
 
 void json_builder::newline()
@@ -85,6 +97,11 @@ void json_builder::newline()
 void json_builder::element()
 {
   d_out << (d_compact ? ":" : ": ");
+}
+
+bool json_builder::toplevel() const
+{
+  return d_indent == 0;
 }
 
 void json_builder::operator()(composite::int_t v)

@@ -30,6 +30,7 @@ private:
   void comma();
   void newline();
   void element();
+  bool toplevel() const;
 
   std::ostream &d_out;
   bool d_compact{false};

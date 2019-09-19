@@ -58,12 +58,12 @@ TEST_P(json_builder_test, reading)
 
 json_testcase json_testcases[] = {
     {"{}",
-     "{\n}\n"},
+     "{\n  \n}\n"},
     {"{\"aap\": \"noot\"}\n",
      "{\n"
      "  \"aap\": \"noot\"\n"
      "}\n"},
-  /*  {"{\"list\": [1, 2, 3]}\n",
+    {"{\"list\": [1, 2, 3]}\n",
      "{\n"
      "  \"list\": [\n"
      "    1,\n"
@@ -97,7 +97,7 @@ json_testcase json_testcases[] = {
      "  {\n"
      "    \"key\": 2\n"
      "  }\n"
-     "]\n"}*/
+     "]\n"}
 
 };
 
