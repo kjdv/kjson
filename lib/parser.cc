@@ -180,15 +180,7 @@ maybe_error<pair<string, document>> parser::pair()
 result parse(istream& input)
 {
   parser p(input);
-
-  try
-  {
-    return p.parse();
-  }
-  catch(std::exception& e)
-  {
-    return results::make_err<document>(results::error{e.what()});
-  }
+  return p.parse();
 }
 
 } // namespace kjson
