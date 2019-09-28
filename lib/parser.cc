@@ -2,7 +2,6 @@
 #include "tokenizer.hh"
 #include <composite/make.hh>
 #include <utility>
-#include <iostream>
 
 namespace kjson {
 
@@ -74,9 +73,8 @@ result parser::parse()
   return advance()
       .and_then(on_token)
       .and_then([this](auto&& v) {
-        return match_and_consume(token::type_t::e_eof).match(
-            [&](auto) { return make_ok<document>(move(v)); },
-            [](auto&& err) { return make_err<document>(move(err)); });
+        return match_and_consume(token::type_t::e_eof).map(
+            [&](auto) { return move(v); });
       });
 }
 
@@ -95,7 +93,6 @@ result parser::sequence()
   return match_and_consume(token::type_t::e_start_sequence)
       .and_then([this](auto) { return elements(); })
       .and_then([this](auto&& d) {
-        cout << "end seq on " << (int)current().tok << endl;
         return match_and_consume(token::type_t::e_end_sequence)
             .map([&](auto) { return move(d); });
       });
@@ -118,8 +115,6 @@ result parser::value()
 
 result parser::extract_value()
 {
-  cout << "ev " << current().value << endl;
-
   auto cmp = [](auto&& v) { return make_ok<document>(move(v)); };
 
   switch(current().tok)
@@ -145,22 +140,14 @@ result parser::elements()
 {
   composite::sequence seq;
 
-  auto append = [&](auto&& v) {
-    cout << "adding " << v << endl;
-    seq.emplace_back(move(v));
-  };
-
-  cout << "start elem" << endl;
+  auto append = [&](auto&& v) { seq.emplace_back(move(v)); };
 
   while (value().consume(append).is_ok())
   {
-    cout << "ts " << (int)current().tok << endl;
     auto me = match_and_consume(token::type_t::e_separator);
     if (me.is_err())
       break;
   }
-
-  cout << "end elem " << current().value << ' ' << (int)current().tok << endl;
 
   return make_ok<document>(move(seq));
 }
