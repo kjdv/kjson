@@ -20,7 +20,7 @@ result load(string const& input)
 
 void dump(const document& data, ostream& out, bool compact)
 {
-  json_builder jb(out);
+  json_builder jb(out, compact);
   data.visit(jb);
 }
 
