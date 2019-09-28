@@ -2,6 +2,7 @@
 #include "json_builder.hh"
 #include "parser.hh"
 #include <sstream>
+#include <string>
 
 namespace kjson {
 
@@ -12,9 +13,9 @@ result load(istream& input)
   return parse(input);
 }
 
-result load(string const& input)
+result load(string_view input)
 {
-  istringstream str(input);
+  istringstream str{string{input}};
   return load(str);
 }
 

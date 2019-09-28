@@ -1,7 +1,7 @@
-#include "json.hh"
 #include "json_builder.hh"
-#include <composite/make.hh>
+#include "json.hh"
 #include <composite/composite.hh>
+#include <composite/make.hh>
 #include <gtest/gtest.h>
 #include <sstream>
 
@@ -29,7 +29,8 @@ class json_builder_test : public testing::TestWithParam<json_testcase>
 public:
   json_builder_test()
     : d_data(load(GetParam().input).unwrap())
-  {}
+  {
+  }
 
   document const& data() const
   {
@@ -102,8 +103,8 @@ json_testcase json_testcases[] = {
 };
 
 INSTANTIATE_TEST_SUITE_P(test_json_builder,
-                        json_builder_test,
-                        testing::ValuesIn(json_testcases));
+                         json_builder_test,
+                         testing::ValuesIn(json_testcases));
 
-}
-}
+} // namespace
+} // namespace kjson
