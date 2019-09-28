@@ -64,14 +64,8 @@ private:
 
 result parser::parse()
 {
-  auto on_token = [this](auto) {
-    return mapping()
-        .or_else([this] { return sequence(); })
-        .or_else([this] { return value(); });
-  };
-
   return advance()
-      .and_then(on_token)
+      .and_then([this](auto) { return value(); })
       .and_then([this](auto&& v) {
         return match_and_consume(token::type_t::e_eof).map(
             [&](auto) { return move(v); });
@@ -106,9 +100,7 @@ result parser::value()
         return extract_value()
           .and_then([this](auto&& v ) {
             return advance()
-              .match(
-                  [&](auto) { return make_ok<document>(move(v)); },
-                  [](auto&& err) { return make_err<document>(move(err)); });
+                  .map([&](auto) { return v; });
             });
       });
 }
