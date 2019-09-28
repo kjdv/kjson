@@ -1,20 +1,21 @@
 #include "parser.hh"
 #include "tokenizer.hh"
-#include <cassert>
-#include <composite/builder.hh>
-#include <optional>
+#include <composite/make.hh>
+#include <utility>
+#include <iostream>
 
 namespace kjson {
 
 using namespace std;
+using namespace results;
 
 namespace {
 
 template <typename T>
-T from_string(const string &v)
+T from_string(const string& v)
 {
   stringstream stream{v};
-  T r;
+  T            r;
   stream >> r;
   return r;
 }
@@ -31,129 +32,95 @@ public:
   result parse();
 
 private:
-  bool mapping(const optional<string> &key = nullopt);
-  bool sequence(const optional<string> &key = nullopt);
-  bool value(const optional<string> &key = nullopt);
-  bool elements();
-  bool members();
-  bool pair();
+  result mapping();
+  result sequence();
+  result value();
+  result elements();
+  result members();
+  maybe_error<pair<string, document>> pair();
 
-  std::optional<composite::composite> extract_value();
+  result extract_value();
 
-  token const& current() const
+  const token &current() const
   {
     return d_token;
   }
 
-  void advance()
+  maybe_error<token> advance()
   {
-    if(!d_err.has_value())
-    {
-      next_token(d_stream).match(
-          [this](auto&& tok) { d_token = tok; },
-          [this](auto&& err) { d_err = err; });
-
-    }
+    return next_token(d_stream).map([this](auto&& t) { this->d_token = t; return t; });
   }
 
-  void start()
+  maybe_error<token> match_and_consume(token::type_t expect)
   {
-    d_err.reset();
-    advance();
+    if (current().tok != expect)
+      return make_err<token>("unexpected token");
+    else
+      return advance();
   }
 
-  istream&           d_stream;
-  composite::builder d_builder;
-  token              d_token;
-  optional<results::error> d_err;
+  istream& d_stream;
+  token d_token;
 };
 
 result parser::parse()
 {
-  start();
+  auto on_token = [this](auto) {
+    return mapping()
+        .or_else([this] { return sequence(); })
+        .or_else([this] { return value(); });
+  };
 
-  if((mapping() ||
-     sequence() ||
-      value()) && !d_err.has_value())
-    return results::make_ok<document>(d_builder.build());
-  else
-    return results::make_err<document>(d_err.value_or(results::error{"no valid document"}));
+  return advance()
+      .and_then(on_token)
+      .and_then([this](auto&& v) {
+        return match_and_consume(token::type_t::e_eof).match(
+            [&](auto) { return make_ok<document>(move(v)); },
+            [](auto&& err) { return make_err<document>(move(err)); });
+      });
 }
 
-bool parser::mapping(const optional<string> &key)
+result parser::mapping()
 {
-  if(current().tok == token::type_t::e_start_mapping)
-  {
-    if (key.has_value())
-      d_builder.push_mapping(*key);
-    else
-      d_builder.push_mapping();
-    advance();
-
-    members();
-
-    if(current().tok != token::type_t::e_end_mapping)
-    {
-      d_err = results::error{"expected '}'"};
-      return false;
-    }
-
-    d_builder.pop();
-    advance();
-    return true;
-  }
-  return false;
+  return match_and_consume(token::type_t::e_start_mapping)
+      .and_then([this](auto) { return members(); })
+      .and_then([this](auto&& d) {
+        return match_and_consume(token::type_t::e_end_mapping)
+            .map([&](auto) { return move(d); });
+      });
 }
 
-bool parser::sequence(const optional<string> &key)
+result parser::sequence()
 {
-  if(current().tok == token::type_t::e_start_sequence)
-  {
-    if (key.has_value())
-      d_builder.push_sequence(*key);
-    else
-      d_builder.push_sequence();
-    advance();
-
-    elements();
-
-    if(current().tok != token::type_t::e_end_sequence)
-    {
-      d_err = results::error{"expected ']'"};
-      return false;
-    }
-
-    d_builder.pop();
-    advance();
-
-    return true;
-  }
-  return false;
+  return match_and_consume(token::type_t::e_start_sequence)
+      .and_then([this](auto) { return elements(); })
+      .and_then([this](auto&& d) {
+        cout << "end seq on " << (int)current().tok << endl;
+        return match_and_consume(token::type_t::e_end_sequence)
+            .map([&](auto) { return move(d); });
+      });
 }
 
-bool parser::value(const optional<string> &key)
+result parser::value()
 {
-  if(mapping(key) ||
-     sequence(key))
-    return true;
-
-  auto value = extract_value();
-  if (!value.has_value())
-    return false;
-
-  advance();
-
-  if (key.has_value())
-    d_builder.with(*key, move(*value));
-  else
-    d_builder.with(move(*value));
-
-  return true;
+  return mapping()
+      .or_else([this] { return sequence(); })
+      .or_else([this] {
+        return extract_value()
+          .and_then([this](auto&& v ) {
+            return advance()
+              .match(
+                  [&](auto) { return make_ok<document>(move(v)); },
+                  [](auto&& err) { return make_err<document>(move(err)); });
+            });
+      });
 }
 
-std::optional<composite::composite> parser::extract_value()
+result parser::extract_value()
 {
-  using cmp = composite::composite;
+  cout << "ev " << current().value << endl;
+
+  auto cmp = [](auto&& v) { return make_ok<document>(move(v)); };
 
   switch(current().tok)
   {
@@ -170,70 +137,79 @@ std::optional<composite::composite> parser::extract_value()
   case token::type_t::e_null:
     return cmp(composite::none{});
   default:
-    return nullopt;
+    return make_err<document>("failed to extract value");
   }
 }
 
-bool parser::elements()
+result parser::elements()
 {
-  while(value())
+  composite::sequence seq;
+
+  auto append = [&](auto&& v) {
+    cout << "adding " << v << endl;
+    seq.emplace_back(move(v));
+  };
+
+  cout << "start elem" << endl;
+
+  while (value().consume(append).is_ok())
   {
-    if(current().tok == token::type_t::e_separator)
-      advance();
-    else
+    cout << "ts " << (int)current().tok << endl;
+    auto me = match_and_consume(token::type_t::e_separator);
+    if (me.is_err())
       break;
   }
-  return true;
+
+  cout << "end elem " << current().value << ' ' << (int)current().tok << endl;
+
+  return make_ok<document>(move(seq));
 }
 
-bool parser::members()
+result parser::members()
 {
-  while(pair())
+  composite::mapping map;
+  auto append = [&](auto&& v) { map.emplace(move(v)); };
+
+  while(pair().consume(append).is_ok())
   {
-    if(current().tok == token::type_t::e_separator)
-      advance();
-    else
+    auto me = match_and_consume(token::type_t::e_separator);
+    if (me.is_err())
       break;
   }
-  return true;
+
+  return make_ok<document>(move(map));
 }
 
-bool parser::pair()
+maybe_error<pair<string, document>> parser::pair()
 {
-  if(current().tok == token::type_t::e_string)
-  {
-    string key = current().value;
-    advance();
+  using T = std::pair<string, document>;
 
-    if(current().tok != token::type_t::e_mapper)
-    {
-      d_err = results::error{"expected ':'"};
-      return false;
-    }
+  if (current().tok != token::type_t::e_string)
+    return make_err<T>("key is not a string");
 
-    advance();
+  string key = move(d_token.value);
+  advance();
 
-    if(!value(key))
-    {
-      d_err = results::error{"value expected after ':'"};
-      return false;
-    }
-
-    return true;
-  }
-  return false;
+  return match_and_consume(token::type_t::e_mapper)
+      .and_then([this](auto) { return value(); })
+      .map([key=move(key)](auto&& val) { return make_pair(move(key), move(val)); });
 }
-}
+
+
+} // namespace
 
 result parse(istream& input)
 {
   parser p(input);
 
-  try {
+  try
+  {
     return p.parse();
-  } catch (std::exception &e) {
+  }
+  catch(std::exception& e)
+  {
     return results::make_err<document>(results::error{e.what()});
   }
 }
 
-}
+} // namespace kjson
