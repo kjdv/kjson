@@ -31,35 +31,38 @@ public:
   result parse();
 
 private:
-  result mapping();
-  result sequence();
-  result value();
-  composite::sequence elements();
-  composite::mapping members();
+  result                              mapping();
+  result                              sequence();
+  result                              value();
+  composite::sequence                 elements();
+  composite::mapping                  members();
   maybe_error<pair<string, document>> pair();
 
   result extract_value();
 
-  const token &current() const
+  const token& current()
   {
     return d_token;
   }
 
   maybe_error<token> advance()
   {
-    return next_token(d_stream).map([this](auto&& t) { this->d_token = t; return t; });
+    return next_token(d_stream).map([this](auto&& t) {
+      this->d_token = t;
+      return t;
+    });
   }
 
   maybe_error<token> match_and_consume(token::type_t expect)
   {
-    if (current().tok != expect)
+    if(current().tok != expect)
       return make_err<token>("unexpected token");
     else
       return advance();
   }
 
   istream& d_stream;
-  token d_token;
+  token    d_token;
 };
 
 result parser::parse()
@@ -67,8 +70,9 @@ result parser::parse()
   return advance()
       .and_then([this](auto) { return value(); })
       .and_then([this](auto&& v) {
-        return match_and_consume(token::type_t::e_eof).map(
-            [&](auto) { return move(v); });
+        return match_and_consume(token::type_t::e_eof).map([&](auto) {
+          return v;
+        });
       });
 }
 
@@ -78,7 +82,7 @@ result parser::mapping()
       .map([this](auto) { return composite::make(members()); })
       .and_then([this](auto&& d) {
         return match_and_consume(token::type_t::e_end_mapping)
-            .map([&](auto) { return move(d); });
+            .map([&](auto) { return d; });
       });
 }
 
@@ -88,7 +92,7 @@ result parser::sequence()
       .map([this](auto) { return composite::make(elements()); })
       .and_then([this](auto&& d) {
         return match_and_consume(token::type_t::e_end_sequence)
-            .map([&](auto) { return move(d); });
+            .map([&](auto) { return d; });
       });
 }
 
@@ -96,33 +100,31 @@ result parser::value()
 {
   return mapping()
       .or_else([this] { return sequence(); })
-      .or_else([this] {
-        return extract_value()
-          .and_then([this](auto&& v ) {
-            return advance()
-                  .map([&](auto) { return v; });
-            });
-      });
+      .or_else([this] { return extract_value(); });
 }
 
 result parser::extract_value()
 {
-  auto cmp = [](auto&& v) { return make_ok<document>(move(v)); };
+  auto ok = [this](auto&& v) {
+    auto c = composite::make(move(v));
+    return advance()
+        .map([c=move(c)](auto) { return c; });
+  };
 
   switch(current().tok)
   {
   case token::type_t::e_int:
-    return cmp(from_string<int64_t>(current().value));
+    return ok(from_string<int64_t>(current().value));
   case token::type_t::e_float:
-    return cmp(from_string<double>(current().value));
+    return ok(from_string<double>(current().value));
   case token::type_t::e_string:
-    return cmp(current().value);
+    return ok(move(current().value));
   case token::type_t::e_true:
-    return cmp(true);
+    return ok(true);
   case token::type_t::e_false:
-    return cmp(false);
+    return ok(false);
   case token::type_t::e_null:
-    return cmp(composite::none{});
+    return ok(composite::none{});
   default:
     return make_err<document>("failed to extract value");
   }
@@ -134,12 +136,9 @@ composite::sequence parser::elements()
 
   auto append = [&](auto&& v) { seq.emplace_back(move(v)); };
 
-  while (value().consume(append).is_ok())
-  {
-    auto me = match_and_consume(token::type_t::e_separator);
-    if (me.is_err())
-      break;
-  }
+  while(value().consume(append).is_ok() &&
+        match_and_consume(token::type_t::e_separator).is_ok())
+    ;
 
   return seq;
 }
@@ -147,14 +146,11 @@ composite::sequence parser::elements()
 composite::mapping parser::members()
 {
   composite::mapping map;
-  auto append = [&](auto&& v) { map.emplace(move(v)); };
+  auto               append = [&](auto&& v) { map.emplace(move(v)); };
 
-  while(pair().consume(append).is_ok())
-  {
-    auto me = match_and_consume(token::type_t::e_separator);
-    if (me.is_err())
-      break;
-  }
+  while(pair().consume(append).is_ok() &&
+        match_and_consume(token::type_t::e_separator).is_ok())
+    ;
 
   return map;
 }
@@ -163,7 +159,7 @@ maybe_error<pair<string, document>> parser::pair()
 {
   using T = std::pair<string, document>;
 
-  if (current().tok != token::type_t::e_string)
+  if(current().tok != token::type_t::e_string)
     return make_err<T>("key is not a string");
 
   string key = move(d_token.value);
@@ -171,9 +167,8 @@ maybe_error<pair<string, document>> parser::pair()
 
   return match_and_consume(token::type_t::e_mapper)
       .and_then([this](auto) { return value(); })
-      .map([key=move(key)](auto&& val) { return make_pair(move(key), move(val)); });
+      .map([key = move(key)](auto&& val) { return make_pair(move(key), move(val)); });
 }
-
 
 } // namespace
 
