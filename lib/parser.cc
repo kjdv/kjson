@@ -34,8 +34,8 @@ private:
   result mapping();
   result sequence();
   result value();
-  result elements();
-  result members();
+  composite::sequence elements();
+  composite::mapping members();
   maybe_error<pair<string, document>> pair();
 
   result extract_value();
@@ -81,7 +81,7 @@ result parser::parse()
 result parser::mapping()
 {
   return match_and_consume(token::type_t::e_start_mapping)
-      .and_then([this](auto) { return members(); })
+      .map([this](auto) { return composite::make(members()); })
       .and_then([this](auto&& d) {
         return match_and_consume(token::type_t::e_end_mapping)
             .map([&](auto) { return move(d); });
@@ -91,7 +91,7 @@ result parser::mapping()
 result parser::sequence()
 {
   return match_and_consume(token::type_t::e_start_sequence)
-      .and_then([this](auto) { return elements(); })
+      .map([this](auto) { return composite::make(elements()); })
       .and_then([this](auto&& d) {
         return match_and_consume(token::type_t::e_end_sequence)
             .map([&](auto) { return move(d); });
@@ -136,7 +136,7 @@ result parser::extract_value()
   }
 }
 
-result parser::elements()
+composite::sequence parser::elements()
 {
   composite::sequence seq;
 
@@ -149,10 +149,10 @@ result parser::elements()
       break;
   }
 
-  return make_ok<document>(move(seq));
+  return seq;
 }
 
-result parser::members()
+composite::mapping parser::members()
 {
   composite::mapping map;
   auto append = [&](auto&& v) { map.emplace(move(v)); };
@@ -164,7 +164,7 @@ result parser::members()
       break;
   }
 
-  return make_ok<document>(move(map));
+  return map;
 }
 
 maybe_error<pair<string, document>> parser::pair()
