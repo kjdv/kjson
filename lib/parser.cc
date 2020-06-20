@@ -36,7 +36,7 @@ private:
   result                              value();
   composite::sequence                 elements();
   composite::mapping                  members();
-  maybe_error<pair<string, document>> pair();
+  maybe_error<pair<string, document>> kv_pair();
 
   result extract_value();
 
@@ -148,14 +148,14 @@ composite::mapping parser::members()
   composite::mapping map;
   auto               append = [&](auto&& v) { map.emplace(move(v)); };
 
-  while(pair().consume(append).is_ok() &&
+  while(kv_pair().consume(append).is_ok() &&
         match_and_consume(token::type_t::e_separator).is_ok())
     ;
 
   return map;
 }
 
-maybe_error<pair<string, document>> parser::pair()
+maybe_error<pair<string, document>> parser::kv_pair()
 {
   using T = std::pair<string, document>;
 
