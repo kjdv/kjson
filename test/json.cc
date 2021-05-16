@@ -116,8 +116,6 @@ RC_GTEST_PROP(toplevel, marshalling_mapping, (map<string, double> orig, bool com
     stringstream stream;
     dump(doc, stream, compact);
 
-    std::cerr << stream.str() << std::endl;
-
     auto m = load(stream).expect("invalid json").as<mapping>();
     map<string, double> actual;
     for (auto&& kv : m) {
