@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <rapidcheck/gtest.h>
 #include <algorithm>
+#include <limits>
 
 namespace kjson {
 namespace {
@@ -55,37 +56,49 @@ TEST(toplevel, incomplete)
 }
 
 template <typename T>
-void check_marshalling(const T& orig, bool compact) {
+bool check_marshalling(const T& orig, bool compact) {
     auto doc = make(T(orig));
     stringstream stream;
     dump(doc, stream, compact);
 
     auto actual = load(stream).expect("invalid json").to<T>();
-    RC_ASSERT(orig == actual);
+    return orig == actual;
+}
+
+TEST(toplevel, marshall_numeric_boundaries) {
+    EXPECT_TRUE(check_marshalling(numeric_limits<int64_t>::max(), true));
+    EXPECT_TRUE(check_marshalling(numeric_limits<int64_t>::min(), true));
+
+    // note: uint64_t has a known limititation w.r.t. on the wire format, but we can check and test whether we can convert back and forth from it
+    EXPECT_TRUE(check_marshalling(numeric_limits<uint64_t>::max(), true));
+    EXPECT_TRUE(check_marshalling(numeric_limits<uint64_t>::min(), true));
+
+    EXPECT_TRUE(check_marshalling(numeric_limits<double>::max(), true));
+    EXPECT_TRUE(check_marshalling(numeric_limits<double>::min(), true));
 }
 
 RC_GTEST_PROP(toplevel, marshalling_bool, (bool b, bool compact)) {
-    check_marshalling(b, compact);
+    RC_ASSERT(check_marshalling(b, compact));
 }
 
 RC_GTEST_PROP(toplevel, marshalling_int, (int i, bool compact)) {
-    check_marshalling(i, compact);
+    RC_ASSERT(check_marshalling(i, compact));
 }
 
 RC_GTEST_PROP(toplevel, marshalling_int64, (int64_t i, bool compact)) {
-    check_marshalling(i, compact);
+    RC_ASSERT(check_marshalling(i, compact));
 }
 
 RC_GTEST_PROP(toplevel, marshalling_uint64, (uint64_t u, bool compact)) {
-    check_marshalling(u, compact);
+    RC_ASSERT(check_marshalling(u, compact));
 }
 
 RC_GTEST_PROP(toplevel, marshalling_float, (double d, bool compact)) {
-    check_marshalling(d, compact);
+    RC_ASSERT(check_marshalling(d, compact));
 }
 
 RC_GTEST_PROP(toplevel, marshalling_string, (string s, bool compact)) {
-    check_marshalling(s, compact);
+    RC_ASSERT(check_marshalling(s, compact));
 }
 
 RC_GTEST_PROP(toplevel, marshalling_sequence, (vector<int> orig, bool compact)) {
