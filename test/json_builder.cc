@@ -99,7 +99,6 @@ json_testcase json_testcases[] = {
      "    \"key\": 2\n"
      "  }\n"
      "]\n"}
-
 };
 
 INSTANTIATE_TEST_SUITE_P(test_json_builder,
