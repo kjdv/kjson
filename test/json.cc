@@ -77,6 +77,12 @@ TEST(toplevel, marshall_numeric_boundaries) {
     EXPECT_TRUE(check_marshalling(numeric_limits<double>::min(), true));
 }
 
+TEST(toplevel, marshalling_null) {
+    none n{};
+    EXPECT_TRUE(check_marshalling(n, false));
+    EXPECT_TRUE(check_marshalling(n, true));
+}
+
 RC_GTEST_PROP(toplevel, marshalling_bool, (bool b, bool compact)) {
     RC_ASSERT(check_marshalling(b, compact));
 }
