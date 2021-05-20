@@ -99,6 +99,15 @@ result load(string_view input)
   return load(str);
 }
 
+maybe_error load(istream &input, visitor &v) {
+    return maybe_error::none();
+}
+
+maybe_error load(string_view input, visitor &v) {
+    istringstream str{string{input}};
+    return load(str, v);
+}
+
 void dump(const document& data, ostream& out, bool compact)
 {
   json_builder jb(out, compact);

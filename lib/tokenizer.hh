@@ -8,7 +8,7 @@
 namespace kjson {
 
 template <typename T>
-using maybe_error = typename results::result<T, results::error>;
+using token_error = typename results::result<T, results::error>;
 
 struct token
 {
@@ -49,6 +49,6 @@ struct token
   }
 };
 
-maybe_error<token> next_token(std::istream& input);
+token_error<token> next_token(std::istream& input);
 }
 

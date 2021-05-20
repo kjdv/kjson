@@ -36,7 +36,7 @@ private:
   result                              value();
   composite::sequence                 elements();
   composite::mapping                  members();
-  maybe_error<pair<string, document>> kv_pair();
+  token_error<pair<string, document>> kv_pair();
 
   result extract_value();
 
@@ -45,7 +45,7 @@ private:
     return d_token;
   }
 
-  maybe_error<token> advance()
+  token_error<token> advance()
   {
     return next_token(d_stream).map([this](auto&& t) {
       this->d_token = t;
@@ -53,7 +53,7 @@ private:
     });
   }
 
-  maybe_error<token> match_and_consume(token::type_t expect)
+  token_error<token> match_and_consume(token::type_t expect)
   {
     if(current().tok != expect)
       return make_err<token>("unexpected token");
@@ -155,7 +155,7 @@ composite::mapping parser::members()
   return map;
 }
 
-maybe_error<pair<string, document>> parser::kv_pair()
+token_error<pair<string, document>> parser::kv_pair()
 {
   using T = std::pair<string, document>;
 

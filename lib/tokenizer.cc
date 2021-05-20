@@ -68,7 +68,7 @@ int non_ws(istream& str)
   return eof;
 }
 
-maybe_error<none> extract_literal(istream& input, char head, string const& tail)
+token_error<none> extract_literal(istream& input, char head, string const& tail)
 {
   for(char e : tail)
   {
@@ -80,7 +80,7 @@ maybe_error<none> extract_literal(istream& input, char head, string const& tail)
   return results::make_ok<none>();
 }
 
-maybe_error<token> extract_number(istream& input, char head)
+token_error<token> extract_number(istream& input, char head)
 {
   bool is_float  = false;
   bool had_point = false;
@@ -124,7 +124,7 @@ maybe_error<token> extract_number(istream& input, char head)
   return results::make_ok<token>(is_float ? token::type_t::e_float : token::type_t::e_int, value);
 }
 
-maybe_error<string> extract_utf8(istream& input)
+token_error<string> extract_utf8(istream& input)
 {
   char32_t wc = 0;
   for(size_t i = 0; i < 4; ++i)
@@ -162,7 +162,7 @@ maybe_error<string> extract_utf8(istream& input)
   return results::make_ok<string>(move(value));
 }
 
-maybe_error<token> extract_string(istream& input)
+token_error<token> extract_string(istream& input)
 {
   string value;
 
@@ -219,7 +219,7 @@ maybe_error<token> extract_string(istream& input)
 }
 }
 
-maybe_error<token> next_token(istream& input)
+token_error<token> next_token(istream& input)
 {
   auto ok = [](auto&& t) { return results::make_ok<token>(forward<token>(t)); };
 
