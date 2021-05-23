@@ -55,5 +55,5 @@ INSTANTIATE_TEST_SUITE_P(escape_tests,
                          escape_test,
                          testing::ValuesIn(escape_testcases));
 
-}
-}
+} // namespace
+} // namespace kjson

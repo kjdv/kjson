@@ -1,11 +1,11 @@
 #include "tokenizer.hh"
 
 #include <cassert>
+#include <composite/composite.hh>
+#include <cstdint>
 #include <cstring>
 #include <istream>
 #include <sstream>
-#include <composite/composite.hh>
-#include <cstdint>
 
 namespace kjson {
 
@@ -196,15 +196,14 @@ token_error<token> extract_string(istream& input)
         value += '\t';
         break;
 
-      case 'u':
-      {
+      case 'u': {
         auto utf8 = extract_utf8(input);
-        if (utf8.is_err())
+        if(utf8.is_err())
           return utf8.map([](auto&&) { return token(token::type_t::e_eof); });
         else
           value += utf8.unwrap();
       }
-       break;
+      break;
 
       default:
         value += c;
@@ -217,7 +216,7 @@ token_error<token> extract_string(istream& input)
 
   return results::make_ok<token>(token::type_t::e_string, value);
 }
-}
+} // namespace
 
 token_error<token> next_token(istream& input)
 {
@@ -272,4 +271,4 @@ token_error<token> next_token(istream& input)
   return results::make_ok<token>(token::type_t::e_eof);
 }
 
-}
+} // namespace kjson

@@ -13,7 +13,7 @@ result load(istream& input)
 {
   to_composite v;
   return load(input, v)
-          .map([&v](auto) { return v.collect(); });
+      .map([&v](auto) { return v.collect(); });
 }
 
 result load(string_view input)
@@ -22,14 +22,16 @@ result load(string_view input)
   return load(str);
 }
 
-maybe_error load(istream &input, visitor &v) {
-    return parse(input, v)
-            .map([](auto&) { return 1; });
+maybe_error load(istream& input, visitor& v)
+{
+  return parse(input, v)
+      .map([](auto&) { return 1; });
 }
 
-maybe_error load(string_view input, visitor &v) {
-    istringstream str{string{input}};
-    return load(str, v);
+maybe_error load(string_view input, visitor& v)
+{
+  istringstream str{string{input}};
+  return load(str, v);
 }
 
 void dump(const document& data, ostream& out, bool compact)
@@ -38,4 +40,4 @@ void dump(const document& data, ostream& out, bool compact)
   data.visit(jb);
 }
 
-}
+} // namespace kjson

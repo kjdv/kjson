@@ -5,7 +5,7 @@
 
 namespace kjson {
 
-void iescape(std::string& str);
+void        iescape(std::string& str);
 std::string escape(std::string_view input);
 
-}
+} // namespace kjson

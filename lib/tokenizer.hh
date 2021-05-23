@@ -1,9 +1,9 @@
 #pragma once
 
 #include <iosfwd>
+#include <results/result.hh>
 #include <stack>
 #include <string>
-#include <results/result.hh>
 
 namespace kjson {
 
@@ -50,5 +50,4 @@ struct token
 };
 
 token_error<token> next_token(std::istream& input);
-}
-
+} // namespace kjson

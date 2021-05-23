@@ -1,12 +1,12 @@
 #include "json_builder.hh"
 #include "escape.hh"
-#include <ostream>
 #include <limits>
+#include <ostream>
 
 namespace kjson {
 
-template<typename T>
-void json_builder::scalar(const T &v)
+template <typename T>
+void json_builder::scalar(const T& v)
 {
   comma();
 
@@ -14,10 +14,11 @@ void json_builder::scalar(const T &v)
   d_needscomma = true;
 }
 
-json_builder::json_builder(std::ostream &out, bool compact)
+json_builder::json_builder(std::ostream& out, bool compact)
   : d_out(out)
   , d_compact(compact)
-{}
+{
+}
 
 void json_builder::operator()(composite::float_t v)
 {
@@ -30,7 +31,7 @@ void json_builder::operator()(std::string_view v)
   scalar(escape(v));
 }
 
-void json_builder::operator()(const composite::sequence &v)
+void json_builder::operator()(const composite::sequence& v)
 {
   comma();
 
@@ -39,19 +40,19 @@ void json_builder::operator()(const composite::sequence &v)
   ++d_indent;
   newline();
 
-  for (auto && item : v)
+  for(auto&& item : v)
     item.visit(*this);
 
   --d_indent;
   newline();
   d_out << ']';
 
-  if (toplevel())
+  if(toplevel())
     newline();
   d_needscomma = true;
 }
 
-void json_builder::operator()(const composite::mapping &v)
+void json_builder::operator()(const composite::mapping& v)
 {
   comma();
 
@@ -60,7 +61,7 @@ void json_builder::operator()(const composite::mapping &v)
   ++d_indent;
   newline();
 
-  for (auto && kv : v)
+  for(auto&& kv : v)
   {
     comma();
     d_out << escape(kv.first);
@@ -73,14 +74,14 @@ void json_builder::operator()(const composite::mapping &v)
   newline();
   d_out << '}';
 
-  if (toplevel())
+  if(toplevel())
     newline();
   d_needscomma = true;
 }
 
 void json_builder::comma()
 {
-  if (d_needscomma)
+  if(d_needscomma)
   {
     d_out << ",";
     newline();
@@ -89,10 +90,10 @@ void json_builder::comma()
 
 void json_builder::newline()
 {
-  if (!d_compact)
+  if(!d_compact)
   {
     d_out << '\n';
-    for (unsigned i = 0; i < d_indent; ++i)
+    for(unsigned i = 0; i < d_indent; ++i)
       d_out << "  ";
   }
 }
@@ -127,5 +128,4 @@ void json_builder::operator()(composite::none)
   scalar("null");
 }
 
-
-}
+} // namespace kjson

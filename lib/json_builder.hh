@@ -5,9 +5,10 @@
 
 namespace kjson {
 
-class json_builder {
+class json_builder
+{
 public:
-  explicit json_builder(std::ostream &out, bool compact = false);
+  explicit json_builder(std::ostream& out, bool compact = false);
 
   void operator()(composite::none);
 
@@ -21,23 +22,23 @@ public:
 
   void operator()(std::string_view v);
 
-  void operator()(const composite::sequence &v);
+  void operator()(const composite::sequence& v);
 
-  void operator()(const composite::mapping &v);
+  void operator()(const composite::mapping& v);
 
 private:
   template <typename T>
-  void scalar(const T &v);
+  void scalar(const T& v);
 
   void comma();
   void newline();
   void element();
   bool toplevel() const;
 
-  std::ostream &d_out;
-  bool d_compact{false};
-  bool d_needscomma{false};
-  unsigned d_indent{0};
+  std::ostream& d_out;
+  bool          d_compact{false};
+  bool          d_needscomma{false};
+  unsigned      d_indent{0};
 };
 
-}
+} // namespace kjson

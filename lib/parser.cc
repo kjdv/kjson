@@ -25,24 +25,24 @@ using maybe_key = results::option<string_view>;
 class parser
 {
 public:
-  parser(istream& input, visitor &visitor)
+  parser(istream& input, visitor& visitor)
     : d_stream(input)
     , d_visitor(visitor)
     , d_token(token::type_t::e_eof)
   {
   }
 
-  result parse();
+  maybe_error parse();
 
 private:
-  result                              mapping(const maybe_key &key);
-  result                              sequence(const maybe_key &key);
-  result                              value(const maybe_key &key);
-  composite::sequence                 elements();
-  composite::mapping                  members();
-  token_error<pair<string, document>> kv_pair();
+  maybe_error                              mapping(const maybe_key& key);
+  maybe_error                              sequence(const maybe_key& key);
+  maybe_error                              value(const maybe_key& key);
+  void                 elements();
+  void                  members();
+  maybe_error kv_pair();
 
-  result extract_value(const maybe_key &key);
+  maybe_error extract_value(const maybe_key& key);
 
   const token& current()
   {
@@ -70,70 +70,67 @@ private:
   token    d_token;
 };
 
-result parser::parse()
+maybe_error parser::parse()
 {
   return advance()
       .and_then([this](auto) { return value(maybe_key::none()); })
-      .and_then([this](auto&& v) {
+      .and_then([this](auto v) {
         return match_and_consume(token::type_t::e_eof).map([&](auto) {
           return v;
         });
       });
 }
 
-result parser::mapping(const maybe_key &key)
+maybe_error parser::mapping(const maybe_key& key)
 {
-  return match_and_consume(token::type_t::e_start_mapping)
+    return match_and_consume(token::type_t::e_start_mapping)
       .map([this, &key](auto) {
-          key.match(
-              [this](string_view k) { d_visitor.push_mapping(k); },
-              [this] { d_visitor.push_mapping(); }
-          );
-          auto ms = composite::make(members());
-          d_visitor.pop();
-          return ms;
+        key.match(
+            [this](string_view k) { d_visitor.push_mapping(k); },
+            [this] { d_visitor.push_mapping(); });
+        members();
+        d_visitor.pop();
+        return maybe_error::ok(0);
       })
-      .and_then([this](auto&& d) {
+      .and_then([this](auto) {
         return match_and_consume(token::type_t::e_end_mapping)
-            .map([&](auto) { return d; });
+            .map([](auto) { return 0; });
       });
 }
 
-result parser::sequence(const maybe_key &key)
+maybe_error parser::sequence(const maybe_key& key)
 {
   return match_and_consume(token::type_t::e_start_sequence)
       .map([this, &key](auto) {
-          key.match(
-              [this](string_view k) { d_visitor.push_sequence(k); },
-              [this] { d_visitor.push_sequence(); }
-          );
-         auto ems = composite::make(elements());
-         d_visitor.pop();
-         return ems;
+        key.match(
+            [this](string_view k) { d_visitor.push_sequence(k); },
+            [this] { d_visitor.push_sequence(); });
+        elements();
+        d_visitor.pop();
+        return 0;
       })
-      .and_then([this](auto&& d) {
+      .and_then([this](auto) {
         return match_and_consume(token::type_t::e_end_sequence)
-            .map([&](auto) { return d; });
+            .map([](auto) { return 0; });
       });
 }
 
-result parser::value(const maybe_key &key)
+maybe_error parser::value(const maybe_key& key)
 {
   return mapping(key)
       .or_else([this, &key] { return sequence(key); })
       .or_else([this, &key] { return extract_value(key); });
 }
 
-result parser::extract_value(const maybe_key &key)
+maybe_error parser::extract_value(const maybe_key& key)
 {
   auto ok = [this, &key](auto&& v) {
     auto c = composite::make(move(v));
     key.match(
         [this, &c](string_view k) { d_visitor.scalar(k, c); },
-        [this, &c] { d_visitor.scalar(c); }
-    );
+        [this, &c] { d_visitor.scalar(c); });
     return advance()
-        .map([c=move(c)](auto) { return c; });
+        .map([](auto&) { return 0; });
   };
 
   switch(current().tok)
@@ -151,94 +148,91 @@ result parser::extract_value(const maybe_key &key)
   case token::type_t::e_null:
     return ok(composite::none{});
   default:
-    return make_err<document>("failed to extract value");
+    return maybe_error::err("failed to extract value");
   }
 }
 
-composite::sequence parser::elements()
+void parser::elements()
 {
-  composite::sequence seq;
-
-  auto append = [&](auto&& v) {
-      seq.emplace_back(move(v));
-  };
-
-  while(value(maybe_key::none()).consume(append).is_ok() &&
+  while(value(maybe_key::none()).is_ok() &&
         match_and_consume(token::type_t::e_separator).is_ok())
     ;
-
-  return seq;
 }
 
-composite::mapping parser::members()
+void parser::members()
 {
-  composite::mapping map;
-  auto               append = [&](auto&& v) { map.emplace(move(v)); };
-
-  while(kv_pair().consume(append).is_ok() &&
+  while(kv_pair().is_ok() &&
         match_and_consume(token::type_t::e_separator).is_ok())
     ;
-
-  return map;
 }
 
-token_error<pair<string, document>> parser::kv_pair()
+maybe_error parser::kv_pair()
 {
-  using T = std::pair<string, document>;
-
   if(current().tok != token::type_t::e_string)
-    return make_err<T>("key is not a string");
+    return maybe_error::err("key is not a string");
 
   string key = move(d_token.value);
   advance();
 
   return match_and_consume(token::type_t::e_mapper)
-      .and_then([this, &key](auto) { return value(maybe_key::some(key)); })
-      .map([key = move(key)](auto&& val) { return make_pair(move(key), move(val)); });
+      .and_then([this, &key](auto) {
+          return value(maybe_key::some(key));
+      });
 }
 
 } // namespace
 
-result parse(istream& input, visitor &visitor)
+maybe_error parse(istream& input, visitor& visitor)
 {
-  try {
-      parser p(input, visitor);
-      return p.parse();
-  } catch (const std::exception &e) {
-      return result::err(e.what());
+  try
+  {
+    parser p(input, visitor);
+    return p.parse();
+  }
+  catch(const std::exception& e)
+  {
+    return maybe_error::err(e.what());
   }
 }
 
-void to_composite::scalar(composite::composite v) {
-    d_builder.with(move(v));
+void to_composite::scalar(composite::composite v)
+{
+  d_builder.with(move(v));
 }
 
-void to_composite::scalar(string_view key, composite::composite v) {
-    d_builder.with(key, move(v));
+void to_composite::scalar(string_view key, composite::composite v)
+{
+  d_builder.with(key, move(v));
 }
 
-void to_composite::push_sequence() {
-    d_builder.push_sequence();
+void to_composite::push_sequence()
+{
+  d_builder.push_sequence();
 }
 
-void to_composite::push_sequence(string_view key) {
-    d_builder.push_sequence(key);
+void to_composite::push_sequence(string_view key)
+{
+  d_builder.push_sequence(key);
 }
 
-void to_composite::push_mapping() {
-    d_builder.push_mapping();
+void to_composite::push_mapping()
+{
+  d_builder.push_mapping();
 }
 
-void to_composite::push_mapping(string_view key) {
-    d_builder.push_mapping(key);
+void to_composite::push_mapping(string_view key)
+{
+  d_builder.push_mapping(key);
 }
 
-void to_composite::pop() {
-    d_builder.pop();
+void to_composite::pop()
+{
+  d_builder.pop();
 }
 
-composite::composite to_composite::collect() {
-    return d_builder.build();
+composite::composite to_composite::collect()
+{
+  return d_builder.build();
 }
 
 } // namespace kjson

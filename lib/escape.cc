@@ -56,4 +56,4 @@ string escape(string_view input)
   return result;
 }
 
-}
+} // namespace kjson

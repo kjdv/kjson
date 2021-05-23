@@ -1,7 +1,7 @@
 #include "json.hh"
 #include "json_builder.hh"
-#include <composite/make.hh>
 #include <composite/composite.hh>
+#include <composite/make.hh>
 #include <gtest/gtest.h>
 #include <sstream>
 
@@ -30,7 +30,8 @@ class json_compact_builder_test : public testing::TestWithParam<json_testcase>
 public:
   json_compact_builder_test()
     : d_data(load(GetParam().input).unwrap())
-  {}
+  {
+  }
 
   document const& data() const
   {
@@ -40,8 +41,8 @@ public:
 
 TEST_P(json_compact_builder_test, writing)
 {
-  ostringstream        stream;
-  json_builder jb(stream, true);
+  ostringstream stream;
+  json_builder  jb(stream, true);
   data().visit(jb);
 
   EXPECT_EQ(GetParam().output, stream.str());
@@ -49,8 +50,8 @@ TEST_P(json_compact_builder_test, writing)
 
 TEST_P(json_compact_builder_test, reading)
 {
-  ostringstream        stream;
-  json_builder jb(stream, true);
+  ostringstream stream;
+  json_builder  jb(stream, true);
   data().visit(jb);
 
   auto actual = load(stream.str());
@@ -75,7 +76,7 @@ json_testcase json_testcases[] = {
 INSTANTIATE_TEST_SUITE_P(test_json_compact_builder,
                          json_compact_builder_test,
                          testing::ValuesIn(json_testcases));
-}
+} // namespace
 
-}
-}
+} // namespace
+} // namespace kjson

@@ -46,7 +46,6 @@ tokenizer_testcase tokenizer_testcases[] =
         {",", {token::type_t::e_separator}},
         {":", {token::type_t::e_mapper}},
 
-
         // literals
         {"true", {{token::type_t::e_true, "true"}}},
         {"false", {{token::type_t::e_false, "false"}}},
@@ -86,10 +85,10 @@ tokenizer_testcase tokenizer_testcases[] =
 };
 
 INSTANTIATE_TEST_SUITE_P(test_tokenizer,
-                        tokenizer_test,
-                        testing::ValuesIn(tokenizer_testcases));
+                         tokenizer_test,
+                         testing::ValuesIn(tokenizer_testcases));
 
-}
+} // namespace
 
 TEST(tokenizer, invalid_utf8)
 {
@@ -109,5 +108,4 @@ TEST(tokenizer, bad_token)
   EXPECT_TRUE(next_token(stream).is_err());
 }
 
-
-}
+} // namespace kjson
