@@ -36,15 +36,15 @@ TEST_P(tokenizer_test, tokens)
 tokenizer_testcase tokenizer_testcases[] =
     {
         // empty
-        {"", {token::type_t::e_eof}},
+        {"", {{token::type_t::e_eof}}},
 
         // simple chars
-        {"{", {token::type_t::e_start_mapping}},
-        {"}", {token::type_t::e_end_mapping}},
-        {"[", {token::type_t::e_start_sequence}},
-        {"]", {token::type_t::e_end_sequence}},
-        {",", {token::type_t::e_separator}},
-        {":", {token::type_t::e_mapper}},
+        {"{", {{token::type_t::e_start_mapping}}},
+        {"}", {{token::type_t::e_end_mapping}}},
+        {"[", {{token::type_t::e_start_sequence}}},
+        {"]", {{token::type_t::e_end_sequence}}},
+        {",", {{token::type_t::e_separator}}},
+        {":", {{token::type_t::e_mapper}}},
 
         // literals
         {"true", {{token::type_t::e_true, "true"}}},
@@ -76,13 +76,13 @@ tokenizer_testcase tokenizer_testcases[] =
         {"\"noot\"", {{token::type_t::e_string, "noot"}}},
 
         // skip whitespace
-        {" \t", {token::type_t::e_eof}},
-        {"\t{ ", {token::type_t::e_start_mapping}},
-        {"\n[", {token::type_t::e_start_sequence}},
+        {" \t", {{token::type_t::e_eof}}},
+        {"\t{ ", {{token::type_t::e_start_mapping}}},
+        {"\n[", {{token::type_t::e_start_sequence}}},
 
         // serial
-        {"3 ,{\t}\"blah\" 2.72", {{token::type_t::e_uint, "3"}, token::type_t::e_separator, token::type_t::e_start_mapping, token::type_t::e_end_mapping, {token::type_t::e_string, "blah"}, {token::type_t::e_float, "2.72"}, token::type_t::e_eof}},
-        {"{\"aap\": \"noot\"}\n", {token::type_t::e_start_mapping, {token::type_t::e_string, "aap"}, token::type_t::e_mapper, {token::type_t::e_string, "noot"}, token::type_t::e_end_mapping, token::type_t::e_eof}},
+        {"3 ,{\t}\"blah\" 2.72", {{token::type_t::e_uint, "3"}, {token::type_t::e_separator}, {token::type_t::e_start_mapping}, {token::type_t::e_end_mapping}, {token::type_t::e_string, "blah"}, {token::type_t::e_float, "2.72"}, {token::type_t::e_eof}}},
+        {"{\"aap\": \"noot\"}\n", {{token::type_t::e_start_mapping}, {token::type_t::e_string, "aap"}, {token::type_t::e_mapper}, {token::type_t::e_string, "noot"}, {token::type_t::e_end_mapping}, {token::type_t::e_eof}}},
 };
 
 INSTANTIATE_TEST_SUITE_P(test_tokenizer,

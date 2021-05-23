@@ -122,7 +122,7 @@ token_error<token> extract_number(istream& input, char head)
       break;
   }
 
-  return results::make_ok<token>(is_float ? token::type_t::e_float : (is_negative ? token::type_t::e_int : token::type_t::e_uint), value);
+  return results::make_ok<token>(token{is_float ? token::type_t::e_float : (is_negative ? token::type_t::e_int : token::type_t::e_uint), move(value)});
 }
 
 token_error<string> extract_utf8(istream& input)
@@ -200,7 +200,7 @@ token_error<token> extract_string(istream& input)
       case 'u': {
         auto utf8 = extract_utf8(input);
         if(utf8.is_err())
-          return utf8.map([](auto&&) { return token(token::type_t::e_eof); });
+          return utf8.map([](auto&&) { return token{token::type_t::e_eof}; });
         else
           value += utf8.unwrap();
       }
@@ -215,13 +215,13 @@ token_error<token> extract_string(istream& input)
       value += c;
   }
 
-  return results::make_ok<token>(token::type_t::e_string, value);
+  return results::make_ok<token>(token{token::type_t::e_string, move(value)});
 }
 } // namespace
 
 token_error<token> next_token(istream& input)
 {
-  auto ok = [](auto&& t) { return results::make_ok<token>(forward<token>(t)); };
+  auto ok = [](token&& t) { return results::make_ok<token>(forward<token>(t)); };
 
   int c = non_ws(input);
   if(c != eof)
@@ -229,24 +229,24 @@ token_error<token> next_token(istream& input)
     switch(c)
     {
     case '{':
-      return ok(token::type_t::e_start_mapping);
+      return ok({token::type_t::e_start_mapping});
     case '}':
-      return ok(token::type_t::e_end_mapping);
+      return ok({token::type_t::e_end_mapping});
     case '[':
-      return ok(token::type_t::e_start_sequence);
+      return ok({token::type_t::e_start_sequence});
     case ']':
-      return ok(token::type_t::e_end_sequence);
+      return ok({token::type_t::e_end_sequence});
     case ',':
-      return ok(token::type_t::e_separator);
+      return ok({token::type_t::e_separator});
     case ':':
-      return ok(token::type_t::e_mapper);
+      return ok({token::type_t::e_mapper});
 
     case 't':
-      return extract_literal(input, 't', "rue").map([](auto&&) { return token(token::type_t::e_true, "true"); });
+      return extract_literal(input, 't', "rue").map([](auto&&) { return token{token::type_t::e_true, "true"}; });
     case 'f':
-      return extract_literal(input, 'f', "alse").map([](auto&&) { return token(token::type_t::e_false, "false"); });
+      return extract_literal(input, 'f', "alse").map([](auto&&) { return token{token::type_t::e_false, "false"}; });
     case 'n':
-      return extract_literal(input, 'n', "ull").map([](auto&&) { return token(token::type_t::e_null, "null"); });
+      return extract_literal(input, 'n', "ull").map([](auto&&) { return token{token::type_t::e_null, "null"}; });
 
     case '0':
     case '1':
@@ -269,7 +269,7 @@ token_error<token> next_token(istream& input)
       return results::make_err<token>(builder("unexpected token ", (char)c));
     }
   }
-  return results::make_ok<token>(token::type_t::e_eof);
+  return results::make_ok<token>(token{token::type_t::e_eof});
 }
 
 } // namespace kjson

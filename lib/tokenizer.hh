@@ -29,25 +29,8 @@ struct token
     e_eof,
   };
 
-  type_t      tok;
-  std::string value;
-
-  token(type_t t)
-    : tok(t)
-  {
-  }
-
-  token(type_t t, const std::string& v)
-    : tok(t)
-    , value(v)
-  {
-  }
-
-  token(type_t t, std::string&& v)
-    : tok(t)
-    , value(std::move(v))
-  {
-  }
+  type_t      tok{type_t::e_eof};
+  std::string value{};
 };
 
 token_error<token> next_token(std::istream& input);

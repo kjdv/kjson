@@ -47,7 +47,7 @@ public:
   parser(istream& input, visitor& visitor)
     : d_stream(input)
     , d_visitor(visitor)
-    , d_token(token::type_t::e_eof)
+    , d_token{token::type_t::e_eof}
   {
   }
 
@@ -146,8 +146,8 @@ maybe_error parser::extract_value(const maybe_key& key)
   auto ok = [this, &key](auto&& v) {
     scalar_t c(move(v));
     key.match(
-        [this, &c](string_view k) { d_visitor.scalar(k, c); },
-        [this, &c] { d_visitor.scalar(c); });
+        [this, &c](string_view k) { d_visitor.scalar(k, move(c)); },
+        [this, &c] { d_visitor.scalar(move(c)); });
     return advance()
         .map([](auto&) { return 0; });
   };
