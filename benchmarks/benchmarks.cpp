@@ -25,9 +25,9 @@ constexpr const char sample[] = R"({
 
 class null_visitor : public visitor {
 public:
-    void scalar(composite::composite) override
+    void scalar(scalar_t) override
     {}
-    void scalar(std::string_view, composite::composite) override
+    void scalar(std::string_view, scalar_t) override
     {}
 
     void push_mapping() override

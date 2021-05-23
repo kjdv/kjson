@@ -10,8 +10,8 @@ namespace kjson {
 class to_composite : public visitor
 {
 public:
-  void scalar(composite::composite v) override;
-  void scalar(std::string_view key, composite::composite v) override;
+  void scalar(scalar_t) override;
+  void scalar(std::string_view key, scalar_t) override;
 
   void push_sequence() override;
   void push_sequence(std::string_view key) override;

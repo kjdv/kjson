@@ -59,7 +59,7 @@ TEST(parser, plain_false)
 
 TEST(parser, plain_null)
 {
-  auto expected = make(none{});
+  auto expected = make(::composite::none{});
   auto actual   = parse("null");
 
   EXPECT_EQ(expected, actual);

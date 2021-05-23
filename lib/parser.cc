@@ -35,11 +35,11 @@ public:
   maybe_error parse();
 
 private:
-  maybe_error                              mapping(const maybe_key& key);
-  maybe_error                              sequence(const maybe_key& key);
-  maybe_error                              value(const maybe_key& key);
-  void                 elements();
-  void                  members();
+  maybe_error mapping(const maybe_key& key);
+  maybe_error sequence(const maybe_key& key);
+  maybe_error value(const maybe_key& key);
+  void        elements();
+  void        members();
   maybe_error kv_pair();
 
   maybe_error extract_value(const maybe_key& key);
@@ -83,7 +83,7 @@ maybe_error parser::parse()
 
 maybe_error parser::mapping(const maybe_key& key)
 {
-    return match_and_consume(token::type_t::e_start_mapping)
+  return match_and_consume(token::type_t::e_start_mapping)
       .map([this, &key](auto) {
         key.match(
             [this](string_view k) { d_visitor.push_mapping(k); },
@@ -125,7 +125,7 @@ maybe_error parser::value(const maybe_key& key)
 maybe_error parser::extract_value(const maybe_key& key)
 {
   auto ok = [this, &key](auto&& v) {
-    auto c = composite::make(move(v));
+    scalar_t c(move(v));
     key.match(
         [this, &c](string_view k) { d_visitor.scalar(k, c); },
         [this, &c] { d_visitor.scalar(c); });
@@ -146,7 +146,7 @@ maybe_error parser::extract_value(const maybe_key& key)
   case token::type_t::e_false:
     return ok(false);
   case token::type_t::e_null:
-    return ok(composite::none{});
+    return ok(none{});
   default:
     return maybe_error::err("failed to extract value");
   }
@@ -176,8 +176,24 @@ maybe_error parser::kv_pair()
 
   return match_and_consume(token::type_t::e_mapper)
       .and_then([this, &key](auto) {
-          return value(maybe_key::some(key));
+        return value(maybe_key::some(key));
       });
+}
+
+composite::composite from_scalar(scalar_t v)
+{
+  return visit([](auto&& item) {
+    using T = decay_t<decltype(item)>;
+    if constexpr(std::is_same_v<T, kjson::none>)
+    {
+      return composite::composite{};
+    }
+    else
+    {
+      return composite::make(forward<T>(item));
+    }
+  },
+               v);
 }
 
 } // namespace
@@ -195,14 +211,14 @@ maybe_error parse(istream& input, visitor& visitor)
   }
 }
 
-void to_composite::scalar(composite::composite v)
+void to_composite::scalar(scalar_t v)
 {
-  d_builder.with(move(v));
+  d_builder.with(from_scalar(v));
 }
 
-void to_composite::scalar(string_view key, composite::composite v)
+void to_composite::scalar(string_view key, scalar_t v)
 {
-  d_builder.with(key, move(v));
+  d_builder.with(key, from_scalar(v));
 }
 
 void to_composite::push_sequence()
