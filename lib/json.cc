@@ -12,7 +12,7 @@ using namespace std;
 result load(istream& input)
 {
   to_composite v;
-  return parse(input, v)
+  return load(input, v)
           .map([&v](auto) { return v.collect(); });
 }
 
@@ -23,12 +23,8 @@ result load(string_view input)
 }
 
 maybe_error load(istream &input, visitor &v) {
-    auto r = parse(input, v);
-    if (r.is_ok()) {
-        return maybe_error::none();
-    } else {
-        return maybe_error::some(r.unwrap_err());
-    }
+    return parse(input, v)
+            .map([](auto&) { return 1; });
 }
 
 maybe_error load(string_view input, visitor &v) {
