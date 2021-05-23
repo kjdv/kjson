@@ -85,6 +85,7 @@ token_error<token> extract_number(istream& input, char head)
   bool is_float  = false;
   bool had_point = false;
   bool had_exp   = false;
+  bool is_negative = head == '-';
 
   string value;
   value += head;
@@ -121,7 +122,7 @@ token_error<token> extract_number(istream& input, char head)
       break;
   }
 
-  return results::make_ok<token>(is_float ? token::type_t::e_float : token::type_t::e_int, value);
+  return results::make_ok<token>(is_float ? token::type_t::e_float : (is_negative ? token::type_t::e_int : token::type_t::e_uint), value);
 }
 
 token_error<string> extract_utf8(istream& input)

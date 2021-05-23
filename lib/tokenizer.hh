@@ -21,6 +21,7 @@ struct token
     e_mapper,         // :
     e_string,
     e_int,
+    e_uint,
     e_float,
     e_true,  // true
     e_false, // false

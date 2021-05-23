@@ -137,6 +137,8 @@ maybe_error parser::extract_value(const maybe_key& key)
   {
   case token::type_t::e_int:
     return ok(from_string<int64_t>(current().value));
+  case token::type_t::e_uint:
+    return ok(from_string<uint64_t>(current().value));
   case token::type_t::e_float:
     return ok(from_string<double>(current().value));
   case token::type_t::e_string:

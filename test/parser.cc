@@ -17,10 +17,26 @@ using namespace composite;
   return v.collect();
 }
 
+TEST(parser, plain_uint)
+{
+  auto expected = make((unsigned)148);
+  auto actual   = parse(" 148 ");
+
+  EXPECT_EQ(expected, actual);
+}
+
 TEST(parser, plain_int)
 {
   auto expected = make(148);
   auto actual   = parse(" 148 ");
+
+  EXPECT_EQ(expected.as<int>(), actual.to<int>());
+}
+
+TEST(parser, plain_negative_int)
+{
+  auto expected = make(-148);
+  auto actual   = parse(" -148 ");
 
   EXPECT_EQ(expected, actual);
 }
@@ -67,7 +83,7 @@ TEST(parser, plain_null)
 
 TEST(parser, sequence)
 {
-  auto expected = make_seq(1, 2, 3);
+  auto expected = make_seq((unsigned)1, (unsigned)2, (unsigned)3);
   auto actual   = parse("[1, 2, 3]");
 
   EXPECT_EQ(expected, actual);
@@ -83,16 +99,16 @@ TEST(parser, sequence_empty)
 
 TEST(parser, sequence_trailing_comma)
 {
-  auto expected = make_seq(1, 2, 3);
-  auto actual   = parse("[1, 2, 3, ]");
+  auto expected = make_seq(-1, -2, -3);
+  auto actual   = parse("[-1, -2, -3, ]");
 
   EXPECT_EQ(expected, actual);
 }
 
 TEST(parser, sequence_nested)
 {
-  auto expected = make_seq(1, make_seq(2, 3), 4, 5);
-  auto actual   = parse("[1, [2, 3], 4, 5]");
+  auto expected = make_seq(-1, make_seq(-2, -3), -4, -5);
+  auto actual   = parse("[-1, [-2, -3], -4, -5]");
 
   EXPECT_EQ(expected, actual);
 }
@@ -124,14 +140,14 @@ TEST(parser, mapping_trailing_comma)
 TEST(parser, mapping_nested)
 {
   auto expected = make_map(
-      "key", "value", "pi", 3.1459, "nest", make_map("one", 1, "two", 2, "three", 3), "e", 2.7182);
+      "key", "value", "pi", 3.1459, "nest", make_map("one", -1, "two", -2, "three", -3), "e", 2.7182);
   auto actual = parse(R"({
       "key": "value",
       "pi" : 3.145900,
       "nest" : {
-         "one" : 1,
-         "two" : 2,
-         "three" : 3
+         "one" : -1,
+         "two" : -2,
+         "three" : -3
       },
       "e" : 2.718200
    })");

@@ -18,7 +18,7 @@ TEST(toplevel, load)
       "  \"key\" : \"value\","
       "  \"list\" : [\n"
       "    \"string\",\n"
-      "    1,\n"
+      "    -1,\n"
       "    true,\n"
       "    {\"pi\":3.14,\"e\":2.71},\n"
       "  ],\n"
@@ -26,7 +26,7 @@ TEST(toplevel, load)
       "}";
 
   auto expected = make_map(
-      "key", "value", "list", make_seq("string", 1, true, make_map("pi", 3.14, "e", 2.71)), "foo", "bar");
+      "key", "value", "list", make_seq("string", -1, true, make_map("pi", 3.14, "e", 2.71)), "foo", "bar");
 
   auto actual = load(document);
 
@@ -47,6 +47,14 @@ TEST(toplevel, incomplete)
   EXPECT_TRUE(actual.is_err());
 }
 
+TEST(toplevel, uint) {
+    ::composite::composite doc((uint64_t)0xffffffffffffffff);
+    stringstream stream;
+    dump(doc, stream, true);
+
+    EXPECT_EQ("18446744073709551615", stream.str());
+}
+
 template <typename T>
 bool check_marshalling(const T& orig, bool compact)
 {
@@ -63,7 +71,7 @@ TEST(toplevel, marshall_numeric_boundaries)
   EXPECT_TRUE(check_marshalling(numeric_limits<int64_t>::max(), true));
   EXPECT_TRUE(check_marshalling(numeric_limits<int64_t>::min(), true));
 
-  // EXPECT_TRUE(check_marshalling(numeric_limits<uint64_t>::max(), true));
+  EXPECT_TRUE(check_marshalling(numeric_limits<uint64_t>::max(), true));
   EXPECT_TRUE(check_marshalling(numeric_limits<uint64_t>::min(), true));
 
   EXPECT_TRUE(check_marshalling(numeric_limits<double>::max(), true));
@@ -94,7 +102,7 @@ RC_GTEST_PROP(toplevel, marshalling_int64, (int64_t i, bool compact))
 
 RC_GTEST_PROP(toplevel, marshalling_uint64, (uint64_t u, bool compact))
 {
-  //RC_ASSERT(check_marshalling(u, compact));
+  RC_ASSERT(check_marshalling(u, compact));
 }
 
 RC_GTEST_PROP(toplevel, marshalling_float, (double d, bool compact))

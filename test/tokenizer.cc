@@ -52,8 +52,9 @@ tokenizer_testcase tokenizer_testcases[] =
         {"null", {{token::type_t::e_null, "null"}}},
 
         // numbers
-        {"1", {{token::type_t::e_int, "1"}}},
-        {"12 ", {{token::type_t::e_int, "12"}}},
+        {"1", {{token::type_t::e_uint, "1"}}},
+        {"12 ", {{token::type_t::e_uint, "12"}}},
+        {"-12 ", {{token::type_t::e_int, "-12"}}},
         {"3.14", {{token::type_t::e_float, "3.14"}}},
         {"2e7", {{token::type_t::e_float, "2e7"}}},
         {"23e+2", {{token::type_t::e_float, "23e+2"}}},
@@ -80,7 +81,7 @@ tokenizer_testcase tokenizer_testcases[] =
         {"\n[", {token::type_t::e_start_sequence}},
 
         // serial
-        {"3 ,{\t}\"blah\" 2.72", {{token::type_t::e_int, "3"}, token::type_t::e_separator, token::type_t::e_start_mapping, token::type_t::e_end_mapping, {token::type_t::e_string, "blah"}, {token::type_t::e_float, "2.72"}, token::type_t::e_eof}},
+        {"3 ,{\t}\"blah\" 2.72", {{token::type_t::e_uint, "3"}, token::type_t::e_separator, token::type_t::e_start_mapping, token::type_t::e_end_mapping, {token::type_t::e_string, "blah"}, {token::type_t::e_float, "2.72"}, token::type_t::e_eof}},
         {"{\"aap\": \"noot\"}\n", {token::type_t::e_start_mapping, {token::type_t::e_string, "aap"}, token::type_t::e_mapper, {token::type_t::e_string, "noot"}, token::type_t::e_end_mapping, token::type_t::e_eof}},
 };
 
