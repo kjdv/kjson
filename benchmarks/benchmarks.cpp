@@ -1,6 +1,7 @@
 #include <benchmark/benchmark.h>
 #include <type_traits>
-#include <json.hh>
+#include "json.hh"
+#include "visitor.hh"
 #include <fstream>
 #include <sstream>
 
@@ -22,6 +23,27 @@ constexpr const char sample[] = R"({
     "foo": "bar"
 })";
 
+class null_visitor : public visitor {
+public:
+    void scalar(composite::composite) override
+    {}
+    void scalar(std::string_view, composite::composite) override
+    {}
+
+    void push_mapping() override
+    {}
+    void push_mapping(std::string_view) override
+    {}
+
+    void push_sequence() override
+    {}
+    void push_sequence(std::string_view) override
+    {}
+
+    void pop() override
+    {}
+};
+
 document sample_as_doc() {
     return load(sample).expect("invalid json");
 }
@@ -37,6 +59,19 @@ void bm_load(benchmark::State &state) {
 }
 
 BENCHMARK(bm_load);
+
+void bm_load_parse_only(benchmark::State &state) {
+    std::istringstream stream{sample};
+    null_visitor v;
+
+    for (auto _ : state) {
+        load(stream, v).expect("valid json");
+        stream.clear();
+        stream.seekg(0);
+    }
+}
+
+BENCHMARK(bm_load_parse_only);
 
 void bm_dump(benchmark::State &state) {
     auto doc = sample_as_doc();

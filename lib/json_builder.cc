@@ -112,6 +112,11 @@ void json_builder::operator()(composite::int_t v)
   scalar(v);
 }
 
+void json_builder::operator()(composite::uint_t v)
+{
+  scalar(v);
+}
+
 void json_builder::operator()(composite::bool_t v)
 {
   scalar(v ? "true" : "false");

@@ -15,6 +15,8 @@ public:
 
   void operator()(composite::int_t v);
 
+  void operator()(composite::uint_t v);
+
   void operator()(composite::float_t v);
 
   void operator()(std::string_view v);
