@@ -49,36 +49,11 @@ TEST(builder, type_deduction) {
     EXPECT_EQ(R"(null|true|1|4294967295|3.1400000000000001|"foo"|)", stream.str());
 }
 
-TEST(builder, keyed_type_deduction) {
-    ostringstream stream;
-
-    builder(stream, false)
-            .with_mapping().unwrap()
-            ->with("none", none_standin{}).unwrap()
-            ->with("b1", true).unwrap()
-            ->with("b2", false).unwrap()
-            ->with("i", 123).unwrap()
-            ->with("u", 0xffffffffffffffff).unwrap()
-            ->with("d", 3.14).unwrap()
-            ->with("s", R"(foo"bar")").unwrap()
-            ->flush();
-
-    EXPECT_EQ(R"({
-  "none": null,
-  "b1": true,
-  "b2": false,
-  "i": 123,
-  "u": 18446744073709551615,
-  "d": 3.1400000000000001,
-  "s": "foo\"bar\""
-})", stream.str());
-}
-
 TEST(builder, in_sequence) {
     ostringstream stream;
 
     builder(stream, false)
-            .with_sequence().unwrap()
+            .push_sequence().unwrap()
             ->with_none().unwrap()
             ->with_bool(true).unwrap()
             ->with_bool(false).unwrap()
@@ -105,7 +80,7 @@ TEST(builder, in_sequence_compact) {
     ostringstream stream;
 
     builder(stream, true)
-            .with_sequence().unwrap()
+            .push_sequence().unwrap()
             ->with_none().unwrap()
             ->with_bool(true).unwrap()
             ->with_bool(false).unwrap()
@@ -123,14 +98,14 @@ TEST(builder, in_mapping) {
     ostringstream stream;
 
     builder(stream, false)
-            .with_mapping().unwrap()
-            ->with_none("none").unwrap()
-            ->with_bool("b1", true).unwrap()
-            ->with_bool("b2", false).unwrap()
-            ->with_int("i", 123).unwrap()
-            ->with_uint("u", 0xffffffffffffffff).unwrap()
-            ->with_float("d", 3.14).unwrap()
-            ->with_string("s", R"(foo"bar")").unwrap()
+            .push_mapping().unwrap()
+            ->key("none").unwrap()->with_none().unwrap()
+            ->key("b1").unwrap()->with_bool(true).unwrap()
+            ->key("b2").unwrap()->with_bool(false).unwrap()
+            ->key("i").unwrap()->with_int(123).unwrap()
+            ->key("u").unwrap()->with_uint(0xffffffffffffffff).unwrap()
+            ->key("d").unwrap()->with_float(3.14).unwrap()
+            ->key("s").unwrap()->with_string(R"(foo"bar")").unwrap()
             ->flush();
 
     EXPECT_EQ(R"({
@@ -148,14 +123,14 @@ TEST(builder, in_mapping_compact) {
     ostringstream stream;
 
     builder(stream, true)
-            .with_mapping().unwrap()
-            ->with_none("none").unwrap()
-            ->with_bool("b1", true).unwrap()
-            ->with_bool("b2", false).unwrap()
-            ->with_int("i", 123).unwrap()
-            ->with_uint("u", 0xffffffffffffffff).unwrap()
-            ->with_float("d", 3.14).unwrap()
-            ->with_string("s", R"(foo"bar")").unwrap()
+            .push_mapping().unwrap()
+            ->key("none").unwrap()->with_none().unwrap()
+            ->key("b1").unwrap()->with_bool(true).unwrap()
+            ->key("b2").unwrap()->with_bool(false).unwrap()
+            ->key("i").unwrap()->with_int(123).unwrap()
+            ->key("u").unwrap()->with_uint(0xffffffffffffffff).unwrap()
+            ->key("d").unwrap()->with_float(3.14).unwrap()
+            ->key("s").unwrap()->with_string(R"(foo"bar")").unwrap()
             ->flush();
 
     EXPECT_EQ(R"({"none":null,"b1":true,"b2":false,"i":123,"u":18446744073709551615,"d":3.1400000000000001,"s":"foo\"bar\""})", stream.str());
@@ -165,9 +140,9 @@ TEST(builder, sequence_in_sequence) {
     ostringstream stream;
 
     builder(stream, true)
-            .with_sequence().unwrap()
+            .push_sequence().unwrap()
             ->with_int(1).unwrap()
-            ->with_sequence().unwrap()
+            ->push_sequence().unwrap()
             ->with_int(2).unwrap()
             ->with_int(3).unwrap()
             ->pop().unwrap()
@@ -181,13 +156,13 @@ TEST(builder, map_in_map) {
     ostringstream stream;
 
     builder(stream, true)
-            .with_mapping().unwrap()
-            ->with_int("a", 1).unwrap()
-            ->with_mapping("m").unwrap()
-            ->with_int("b", 2).unwrap()
-            ->with_int("c", 3).unwrap()
+            .push_mapping().unwrap()
+            ->key("a").unwrap()->with(1).unwrap()
+            ->key("m").unwrap()->push_mapping().unwrap()
+            ->key("b").unwrap()->with(2).unwrap()
+            ->key("c").unwrap()->with(3).unwrap()
             ->pop().unwrap()
-            ->with_int("d", 4).unwrap()
+            ->key("d").unwrap()->with(4).unwrap()
             ->flush();
 
     EXPECT_EQ(R"({"a":1,"m":{"b":2,"c":3},"d":4})", stream.str());
@@ -197,13 +172,13 @@ TEST(builder, map_in_sequence) {
     ostringstream stream;
 
     builder(stream, true)
-            .with_sequence().unwrap()
-            ->with_int(1).unwrap()
-            ->with_mapping().unwrap()
-            ->with_int("a", 2).unwrap()
-            ->with_int("b", 3).unwrap()
+            .push_sequence().unwrap()
+            ->with(1).unwrap()
+            ->push_mapping().unwrap()
+            ->key("a").unwrap()->with(2).unwrap()
+            ->key("b").unwrap()->with(3).unwrap()
             ->pop().unwrap()
-            ->with_int(4).unwrap()
+            ->with(4).unwrap()
             ->flush();
 
     EXPECT_EQ(R"([1,{"a":2,"b":3},4])", stream.str());
@@ -213,13 +188,13 @@ TEST(builder, sequence_in_map) {
     ostringstream stream;
 
     builder(stream, true)
-            .with_mapping().unwrap()
-            ->with_int("a", 1).unwrap()
-            ->with_sequence("s").unwrap()
-            ->with_int(2).unwrap()
-            ->with_int(3).unwrap()
+            .push_mapping().unwrap()
+            ->key("a").unwrap()->with(1).unwrap()
+            ->key("s").unwrap()->push_sequence().unwrap()
+            ->with(2).unwrap()
+            ->with(3).unwrap()
             ->pop().unwrap()
-            ->with_int("b", 4).unwrap()
+            ->key("b").unwrap()->with(4).unwrap()
             ->flush();
 
     EXPECT_EQ(R"({"a":1,"s":[2,3],"b":4})", stream.str());
@@ -229,16 +204,16 @@ TEST(builder, pretty) {
     ostringstream stream;
 
     builder(stream, false)
-            .with_mapping().unwrap()
-            ->with_int("a", 1).unwrap()
-            ->with_sequence("s").unwrap()
-            ->with_int(2).unwrap()
-            ->with_int(3).unwrap()
+            .push_mapping().unwrap()
+            ->key("a").unwrap()->with(1).unwrap()
+            ->key("s").unwrap()->push_sequence().unwrap()
+            ->with(2).unwrap()
+            ->with(3).unwrap()
             ->pop().unwrap()
-            ->with_int("b", 4).unwrap()
-            ->with_mapping("m").unwrap()
-            ->with_int("c", 5).unwrap()
-            ->with_int("d", 6).unwrap()
+            ->key("b").unwrap()->with(4).unwrap()
+            ->key("m").unwrap()->push_mapping().unwrap()
+            ->key("c").unwrap()->with(5).unwrap()
+            ->key("d").unwrap()->with(6).unwrap()
             ->flush();
 
     EXPECT_EQ(R"({
@@ -255,6 +230,13 @@ TEST(builder, pretty) {
 })", stream.str());
 }
 
+TEST(builder, check_bad_key) {
+    ostringstream stream;
+
+    EXPECT_TRUE(builder(stream).key("k").is_err());
+    EXPECT_TRUE(builder(stream).push_sequence().unwrap()->key("k").is_err());
+    EXPECT_TRUE(builder(stream).push_mapping().unwrap()->with(1).is_err());
+}
 
 }
 }

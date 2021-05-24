@@ -7,24 +7,23 @@
 
 namespace kjson {
 
-class to_composite : public visitor
-{
-public:
-  void scalar(scalar_t) override;
-  void scalar(std::string_view key, scalar_t) override;
+class to_composite : public visitor {
+  public:
+    void scalar(scalar_t) override;
+    void scalar(std::string_view key, scalar_t) override;
 
-  void push_sequence() override;
-  void push_sequence(std::string_view key) override;
+    void push_sequence() override;
+    void push_sequence(std::string_view key) override;
 
-  void push_mapping() override;
-  void push_mapping(std::string_view key) override;
+    void push_mapping() override;
+    void push_mapping(std::string_view key) override;
 
-  void pop() override;
+    void pop() override;
 
-  composite::composite collect();
+    composite::composite collect();
 
-private:
-  composite::builder d_builder;
+  private:
+    composite::builder d_builder;
 };
 
 maybe_error parse(std::istream& input, visitor& visitor);

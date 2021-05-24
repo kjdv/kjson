@@ -7,30 +7,26 @@
 
 namespace kjson {
 
-class json_builder
-{
-public:
-  explicit json_builder(std::ostream& out, bool compact = false);
+class json_builder {
+  public:
+    explicit json_builder(std::ostream& out, bool compact = false);
 
-  void operator()(composite::none);
+    template <typename T>
+    void operator()(T&& v);
 
-  void operator()(composite::bool_t v);
+    void operator()(const composite::sequence& v);
 
-  void operator()(composite::int_t v);
+    void operator()(const composite::mapping& v);
 
-  void operator()(composite::uint_t v);
+  private:
+    void to_exc(const builder::result& r) const;
 
-  void operator()(composite::float_t v);
-
-  void operator()(std::string_view v);
-
-  void operator()(const composite::sequence& v);
-
-  void operator()(const composite::mapping& v);
-
-private:
-  builder                      d_base;
-  std::stack<std::string_view> d_keystack;
+    builder                      d_base;
 };
+
+template <typename T>
+void json_builder::operator()(T&& v) {
+    to_exc(d_base.with(std::forward<T>(v)));
+}
 
 } // namespace kjson

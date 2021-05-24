@@ -11,50 +11,43 @@ namespace {
 using namespace std;
 using namespace composite;
 
-struct json_testcase
-{
-  const string input;
-  const string output;
+struct json_testcase {
+    const string input;
+    const string output;
 };
 
-inline ostream& operator<<(ostream& out, json_testcase const& tc)
-{
-  return out << "input: " << tc.input << "\noutput:" << tc.output << '\n';
+inline ostream& operator<<(ostream& out, json_testcase const& tc) {
+    return out << "input: " << tc.input << "\noutput:" << tc.output << '\n';
 }
 
-class json_builder_test : public testing::TestWithParam<json_testcase>
-{
-  document d_data;
+class json_builder_test : public testing::TestWithParam<json_testcase> {
+    document d_data;
 
-public:
-  json_builder_test()
-    : d_data(load(GetParam().input).unwrap())
-  {
-  }
+  public:
+    json_builder_test()
+      : d_data(load(GetParam().input).unwrap()) {
+    }
 
-  document const& data() const
-  {
-    return d_data;
-  }
+    document const& data() const {
+        return d_data;
+    }
 };
 
-TEST_P(json_builder_test, writing)
-{
-  ostringstream stream;
-  json_builder  jb(stream);
-  data().visit(jb);
+TEST_P(json_builder_test, writing) {
+    ostringstream stream;
+    json_builder  jb(stream);
+    data().visit(jb);
 
-  EXPECT_EQ(GetParam().output, stream.str());
+    EXPECT_EQ(GetParam().output, stream.str());
 }
 
-TEST_P(json_builder_test, reading)
-{
-  ostringstream stream;
-  json_builder  jb(stream);
-  data().visit(jb);
+TEST_P(json_builder_test, reading) {
+    ostringstream stream;
+    json_builder  jb(stream);
+    data().visit(jb);
 
-  auto actual = load(stream.str());
-  EXPECT_EQ(data(), actual.unwrap());
+    auto actual = load(stream.str());
+    EXPECT_EQ(data(), actual.unwrap());
 }
 
 json_testcase json_testcases[] = {

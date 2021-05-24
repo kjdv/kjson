@@ -6,29 +6,25 @@ namespace {
 
 using namespace std;
 
-struct escape_testcase
-{
-  string input;
-  string expected;
+struct escape_testcase {
+    string input;
+    string expected;
 };
 
-inline ostream& operator<<(ostream& o, escape_testcase const& et)
-{
-  return o << "'" << et.input << "', '" << et.expected << "'";
+inline ostream& operator<<(ostream& o, escape_testcase const& et) {
+    return o << "'" << et.input << "', '" << et.expected << "'";
 }
 
-class escape_test : public testing::TestWithParam<escape_testcase>
-{
+class escape_test : public testing::TestWithParam<escape_testcase> {
 };
 
-TEST_P(escape_test, extract_and_append)
-{
-  string const& input    = GetParam().input;
-  string const& expected = GetParam().expected;
+TEST_P(escape_test, extract_and_append) {
+    string const& input    = GetParam().input;
+    string const& expected = GetParam().expected;
 
-  string actual = escape(input);
+    string actual = escape(input);
 
-  EXPECT_EQ(expected, actual);
+    EXPECT_EQ(expected, actual);
 }
 
 escape_testcase escape_testcases[] =

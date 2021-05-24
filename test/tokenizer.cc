@@ -9,28 +9,24 @@ namespace {
 
 using namespace std;
 
-struct tokenizer_testcase
-{
-  string        input;
-  vector<token> tokens;
+struct tokenizer_testcase {
+    string        input;
+    vector<token> tokens;
 };
 
-class tokenizer_test : public testing::TestWithParam<tokenizer_testcase>
-{
+class tokenizer_test : public testing::TestWithParam<tokenizer_testcase> {
 };
 
-TEST_P(tokenizer_test, tokens)
-{
-  tokenizer_testcase const& testcase = GetParam();
+TEST_P(tokenizer_test, tokens) {
+    tokenizer_testcase const& testcase = GetParam();
 
-  istringstream stream(testcase.input);
+    istringstream stream(testcase.input);
 
-  for(auto&& expected : testcase.tokens)
-  {
-    token actual = next_token(stream).unwrap();
-    EXPECT_EQ(expected.tok, actual.tok);
-    EXPECT_EQ(expected.value, actual.value);
-  }
+    for(auto&& expected : testcase.tokens) {
+        token actual = next_token(stream).unwrap();
+        EXPECT_EQ(expected.tok, actual.tok);
+        EXPECT_EQ(expected.value, actual.value);
+    }
 }
 
 tokenizer_testcase tokenizer_testcases[] =
@@ -91,22 +87,19 @@ INSTANTIATE_TEST_SUITE_P(test_tokenizer,
 
 } // namespace
 
-TEST(tokenizer, invalid_utf8)
-{
-  stringstream stream("\"\\ug582\"");
-  EXPECT_TRUE(next_token(stream).is_err());
+TEST(tokenizer, invalid_utf8) {
+    stringstream stream("\"\\ug582\"");
+    EXPECT_TRUE(next_token(stream).is_err());
 }
 
-TEST(tokenizer, bad_literal)
-{
-  stringstream stream("trfalse");
-  EXPECT_TRUE(next_token(stream).is_err());
+TEST(tokenizer, bad_literal) {
+    stringstream stream("trfalse");
+    EXPECT_TRUE(next_token(stream).is_err());
 }
 
-TEST(tokenizer, bad_token)
-{
-  stringstream stream("!");
-  EXPECT_TRUE(next_token(stream).is_err());
+TEST(tokenizer, bad_token) {
+    stringstream stream("!");
+    EXPECT_TRUE(next_token(stream).is_err());
 }
 
 } // namespace kjson
