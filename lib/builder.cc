@@ -3,6 +3,7 @@
 #include <ostream>
 #include <stack>
 #include <iomanip>
+#include <limits>
 
 namespace kjson {
 
@@ -26,7 +27,7 @@ public:
                 .map([](auto *t) { return t->scalar("null"); });
     }
     result with_none(std::string_view key) {
-        return result::err("implement me");
+        return with_key(key).map([](auto *t) { return t->scalar("null"); });
     }
 
     result with_bool(bool v) {
@@ -35,7 +36,8 @@ public:
                 .map([v](auto *t) { return t->scalar(v); });
     }
     result with_bool(std::string_view key, bool v) {
-        return result::err("implement me");
+        d_out << boolalpha;
+        return with_key(key).map([v](auto *t) { return t->scalar(v); });
     }
 
     result with_int(int64_t v) {
@@ -43,7 +45,7 @@ public:
                 .map([v](auto *t) { return t->scalar(v); });
     }
     result with_int(std::string_view key, int64_t v) {
-        return result::err("implement me");
+        return with_key(key).map([v](auto *t) { return t->scalar(v); });
     }
 
     result with_uint(uint64_t v) {
@@ -51,42 +53,41 @@ public:
                 .map([v](auto *t) { return t->scalar(v); });
     }
     result with_uint(std::string_view key, uint64_t v) {
-        return result::err("implement me");
+        return with_key(key).map([v](auto *t) { return t->scalar(v); });
     }
 
     result with_float(double v) {
+        d_out.precision(std::numeric_limits<double>::max_digits10);
         return in_sequence()
                 .map([v](auto *t) { return t->scalar(v); });
     }
     result with_float(std::string_view key, double v) {
-        return result::err("implement me");
+        d_out.precision(std::numeric_limits<double>::max_digits10);
+        return with_key(key).map([v](auto *t) { return t->scalar(v); });
     }
 
     result with_string(std::string_view v) {
         return in_sequence()
-                .map([v](auto *t) { return t->scalar(std::quoted(v)); });
+                .map([v](auto *t) { return t->scalar(quoted(v)); });
     }
     result with_string(std::string_view key, std::string_view v) {
-        return result::err("implement me");
+       return with_key(key).map([v](auto *t) { return t->scalar(quoted(v)); });
     }
 
     result with_mapping() {
-        return result::err("implement me");
+        return in_sequence()
+                .map([](auto *t) { return t->do_mapping(); });
     }
     result with_mapping(std::string_view key) {
-        return result::err("implement me");
+        return with_key(key).map([](auto *t) { return t->do_mapping(); });
     }
 
     result with_sequence() {
         return in_sequence()
-                .map([](auto *t) {
-           t->d_out << '[';
-           t->d_stack.push(']');
-           return t;
-        });
+                .map([](auto *t) { return t->do_sequence(); });
     }
     result with_sequence(std::string_view key) {
-        return result::err("implement me");
+        return with_key(key).map([](auto *t) { return t->do_sequence(); });
     }
 
     result pop() {
@@ -94,27 +95,39 @@ public:
             return result::err("can not pop an empty stack");
         }
         auto c = d_stack.top(); d_stack.pop();
+        newline();
         d_out << c;
         return result::ok(this);
     }
 
-    result flush() {
+    void flush() {
         while (!d_stack.empty()) {
-            pop();
+            pop().unwrap();
         }
-        return result::ok(this);
     }
 
 private:
     template <typename T>
     impl *scalar(const T &v) {
-        if (d_needscomma) {
-            d_out << (d_compact ? "," : ", ");
-        }
+        comma();
+
         d_out << v;
         d_needscomma = true;
 
         return this;
+    }
+
+    result with_key(string_view key) {
+        return in_mapping()
+                .map([this, key](auto *t) {
+            assert(this == t);
+            comma();
+
+            d_out << quoted(key);
+            d_out << (d_compact ? ":" : ": ");
+            d_needscomma = false;
+            return this;
+        });
     }
 
     result in_sequence() {
@@ -122,6 +135,47 @@ private:
             return result::err("top of the stack is not a sequence");
         } else {
             return result::ok(this);
+        }
+    }
+
+    result in_mapping() {
+        if (d_stack.empty() || d_stack.top() != '}') {
+            return result::err("top of the stack is not a mapping");
+        } else {
+            return result::ok(this);
+        }
+    }
+
+    impl *do_mapping() {
+        return push('{', '}');
+    }
+
+    impl *do_sequence() {
+        return push('[', ']');
+    }
+
+    impl *push(char b, char e) {
+        comma();
+        d_out << b;
+        d_stack.push(e);
+        newline();
+        d_needscomma = false;
+        return this;
+    }
+
+    void comma() {
+        if (d_needscomma) {
+            d_out << ',';
+            newline();
+        }
+    }
+
+    void newline() {
+        if (!d_compact) {
+            d_out << '\n';
+            for (size_t i = 0; i < d_stack.size(); ++i) {
+                d_out << "  ";
+            }
         }
     }
 
@@ -242,10 +296,10 @@ builder::result builder::pop()
     return d_pimpl->pop().map([this](auto) { return this; });
 }
 
-builder::result builder::flush()
+void builder::flush()
 {
     assert(d_pimpl);
-    return d_pimpl->flush().map([this](auto) { return this; });
+    d_pimpl->flush();
 }
 
 }

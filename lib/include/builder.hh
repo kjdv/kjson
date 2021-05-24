@@ -12,7 +12,7 @@ class builder {
 public:
     using result = results::result<builder *>;
 
-    explicit builder(std::ostream &out, bool compact = true);
+    explicit builder(std::ostream &out, bool compact = false);
     ~builder();
 
     result with_none();
@@ -41,7 +41,7 @@ public:
 
     result pop();
 
-    result flush();
+    void flush();
 
 private:
     class impl;
