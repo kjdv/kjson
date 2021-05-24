@@ -7,6 +7,8 @@
 namespace kjson {
 namespace {
 
+struct none_standin{};
+
 using namespace std;
 
 TEST(builder, single_scalars) {
@@ -26,6 +28,50 @@ TEST(builder, single_scalars) {
     stream << '|';
 
     EXPECT_EQ(R"(null|true|-1|1|3.1400000000000001|"foo"|)", stream.str());
+}
+
+TEST(builder, type_deduction) {
+    ostringstream stream;
+
+    builder(stream, true).with(none_standin{}).unwrap()->flush();
+    stream << '|';
+    builder(stream, true).with(true).unwrap()->flush();
+    stream << '|';
+    builder(stream, true).with(1).unwrap()->flush();
+    stream << '|';
+    builder(stream, true).with(static_cast<unsigned>(-1)).unwrap()->flush();
+    stream << '|';
+    builder(stream, true).with(3.14).unwrap()->flush();
+    stream << '|';
+    builder(stream, true).with("foo").unwrap()->flush();
+    stream << '|';
+
+    EXPECT_EQ(R"(null|true|1|4294967295|3.1400000000000001|"foo"|)", stream.str());
+}
+
+TEST(builder, keyed_type_deduction) {
+    ostringstream stream;
+
+    builder(stream, false)
+            .with_mapping().unwrap()
+            ->with("none", none_standin{}).unwrap()
+            ->with("b1", true).unwrap()
+            ->with("b2", false).unwrap()
+            ->with("i", 123).unwrap()
+            ->with("u", 0xffffffffffffffff).unwrap()
+            ->with("d", 3.14).unwrap()
+            ->with("s", R"(foo"bar")").unwrap()
+            ->flush();
+
+    EXPECT_EQ(R"({
+  "none": null,
+  "b1": true,
+  "b2": false,
+  "i": 123,
+  "u": 18446744073709551615,
+  "d": 3.1400000000000001,
+  "s": "foo\"bar\""
+})", stream.str());
 }
 
 TEST(builder, in_sequence) {

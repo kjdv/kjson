@@ -25,6 +25,10 @@ public:
     flush();
   }
 
+  result key(string_view k) {
+      return with_key(k);
+  }
+
   result with_none()
   {
     return in_sequence()
@@ -154,6 +158,14 @@ private:
           d_needscomma = false;
           return this;
         });
+  }
+
+  result expect_value() {
+      if (!d_stack.empty() && d_stack.top() == '}') {
+
+      } else {
+          return result::ok(this);
+      }
   }
 
   result in_sequence()
