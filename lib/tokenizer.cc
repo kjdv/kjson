@@ -82,9 +82,9 @@ token_error<none> extract_literal(istream& input, char head, string const& tail)
 
 token_error<token> extract_number(istream& input, char head)
 {
-  bool is_float  = false;
-  bool had_point = false;
-  bool had_exp   = false;
+  bool is_float    = false;
+  bool had_point   = false;
+  bool had_exp     = false;
   bool is_negative = head == '-';
 
   string value;

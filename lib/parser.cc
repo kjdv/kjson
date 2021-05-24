@@ -2,8 +2,8 @@
 #include "tokenizer.hh"
 #include "visitor.hh"
 #include <composite/make.hh>
-#include <utility>
 #include <cstdlib>
+#include <utility>
 
 namespace kjson {
 
@@ -16,27 +16,30 @@ template <typename T>
 T from_string(const string& v);
 
 template <>
-uint64_t from_string<uint64_t>(const string &v) {
-    static_assert(sizeof(decltype(std::strtoull(nullptr, nullptr, 10))) >= sizeof(uint64_t), "unsigned long long not long enough");
+uint64_t from_string<uint64_t>(const string& v)
+{
+  static_assert(sizeof(decltype(std::strtoull(nullptr, nullptr, 10))) >= sizeof(uint64_t), "unsigned long long not long enough");
 
-    char *end;
-    return std::strtoull(v.data(), &end, 10);
+  char* end;
+  return std::strtoull(v.data(), &end, 10);
 }
 
 template <>
-int64_t from_string<int64_t>(const string &v) {
-    static_assert(sizeof(decltype(std::strtoll(nullptr, nullptr, 10))) >= sizeof(uint64_t), "long long not long enough");
+int64_t from_string<int64_t>(const string& v)
+{
+  static_assert(sizeof(decltype(std::strtoll(nullptr, nullptr, 10))) >= sizeof(uint64_t), "long long not long enough");
 
-    char *end;
-    return std::strtoll(v.data(), &end, 10);
+  char* end;
+  return std::strtoll(v.data(), &end, 10);
 }
 
 template <>
-double from_string<double>(const string &v) {
-    static_assert(sizeof(decltype(std::strtod(nullptr, nullptr))) >= sizeof(double), "not long enough");
+double from_string<double>(const string& v)
+{
+  static_assert(sizeof(decltype(std::strtod(nullptr, nullptr))) >= sizeof(double), "not long enough");
 
-    char *end;
-    return std::strtod(v.data(), &end);
+  char* end;
+  return std::strtod(v.data(), &end);
 }
 
 using maybe_key = results::option<string_view>;

@@ -47,12 +47,13 @@ TEST(toplevel, incomplete)
   EXPECT_TRUE(actual.is_err());
 }
 
-TEST(toplevel, uint) {
-    ::composite::composite doc((uint64_t)0xffffffffffffffff);
-    stringstream stream;
-    dump(doc, stream, true);
+TEST(toplevel, uint)
+{
+  ::composite::composite doc((uint64_t)0xffffffffffffffff);
+  stringstream           stream;
+  dump(doc, stream, true);
 
-    EXPECT_EQ("18446744073709551615", stream.str());
+  EXPECT_EQ("18446744073709551615", stream.str());
 }
 
 template <typename T>

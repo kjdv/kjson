@@ -1,6 +1,6 @@
+#include "builder.hh"
 #include <gtest/gtest.h>
 #include <sstream>
-#include "builder.hh"
 
 // clang-format off
 
@@ -178,6 +178,37 @@ TEST(builder, sequence_in_map) {
 
     EXPECT_EQ(R"({"a":1,"s":[2,3],"b":4})", stream.str());
 }
+
+TEST(builder, pretty) {
+    ostringstream stream;
+
+    builder(stream, false)
+            .with_mapping().unwrap()
+            ->with_int("a", 1).unwrap()
+            ->with_sequence("s").unwrap()
+            ->with_int(2).unwrap()
+            ->with_int(3).unwrap()
+            ->pop().unwrap()
+            ->with_int("b", 4).unwrap()
+            ->with_mapping("m").unwrap()
+            ->with_int("c", 5).unwrap()
+            ->with_int("d", 6).unwrap()
+            ->flush();
+
+    EXPECT_EQ(R"({
+  "a": 1,
+  "s": [
+    2,
+    3
+  ],
+  "b": 4,
+  "m": {
+    "c": 5,
+    "d": 6
+  }
+})", stream.str());
+}
+
 
 }
 }

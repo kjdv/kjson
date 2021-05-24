@@ -59,11 +59,11 @@ TEST_P(json_builder_test, reading)
 
 json_testcase json_testcases[] = {
     {"{}",
-     "{\n  \n}\n"},
-    {"{\"aap\": \"noot\"}\n",
+     "{\n  \n}"},
+    {"{\"aap\": \"noot\"}",
      "{\n"
      "  \"aap\": \"noot\"\n"
-     "}\n"},
+     "}"},
     {"{\"list\": [1, 2, 3]}\n",
      "{\n"
      "  \"list\": [\n"
@@ -71,14 +71,14 @@ json_testcase json_testcases[] = {
      "    2,\n"
      "    3\n"
      "  ]\n"
-     "}\n"},
+     "}"},
     {
         "{\"map\": {\"one\": 1, }}\n",
         "{\n"
         "  \"map\": {\n"
         "    \"one\": 1\n"
         "  }\n"
-        "}\n",
+        "}",
     },
     {"{\"nested_list\": [1,[2,3]]}\n",
      "{\n"
@@ -89,7 +89,7 @@ json_testcase json_testcases[] = {
      "      3\n"
      "    ]\n"
      "  ]\n"
-     "}\n"},
+     "}"},
     {"[{\"key\" : 1}, {\"key\" : 2}]",
      "[\n"
      "  {\n"
@@ -98,7 +98,7 @@ json_testcase json_testcases[] = {
      "  {\n"
      "    \"key\": 2\n"
      "  }\n"
-     "]\n"}};
+     "]"}};
 
 INSTANTIATE_TEST_SUITE_P(test_json_builder,
                          json_builder_test,

@@ -1,7 +1,9 @@
 #pragma once
 
+#include "builder.hh"
 #include <composite/composite.hh>
 #include <iosfwd>
+#include <stack>
 
 namespace kjson {
 
@@ -27,18 +29,8 @@ public:
   void operator()(const composite::mapping& v);
 
 private:
-  template <typename T>
-  void scalar(const T& v);
-
-  void comma();
-  void newline();
-  void element();
-  bool toplevel() const;
-
-  std::ostream& d_out;
-  bool          d_compact{false};
-  bool          d_needscomma{false};
-  unsigned      d_indent{0};
+  builder                      d_base;
+  std::stack<std::string_view> d_keystack;
 };
 
 } // namespace kjson
