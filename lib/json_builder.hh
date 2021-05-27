@@ -19,14 +19,12 @@ class json_builder {
     void operator()(const composite::mapping& v);
 
   private:
-    void to_exc(const builder::result& r) const;
-
-    builder                      d_base;
+    builder d_base;
 };
 
 template <typename T>
 void json_builder::operator()(T&& v) {
-    to_exc(d_base.with(std::forward<T>(v)));
+    d_base.value(std::forward<T>(v));
 }
 
 } // namespace kjson

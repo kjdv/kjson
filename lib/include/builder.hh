@@ -3,37 +3,40 @@
 #include <cstdint>
 #include <iosfwd>
 #include <memory>
-#include <results/result.hh>
+#include <stdexcept>
 #include <string_view>
 #include <type_traits>
 #include <utility>
 
 namespace kjson {
 
+class builder_error : public std::runtime_error {
+  public:
+    using std::runtime_error::runtime_error;
+};
+
 class builder {
   public:
-    using result = results::result<builder*>;
-
     explicit builder(std::ostream& out, bool compact = false);
     ~builder();
 
-    result key(std::string_view k);
+    builder& key(std::string_view k);
 
     template <typename T>
-    result with(T&& v);
+    builder& value(T&& v);
 
-    result with_none();
-    result with_bool(bool v);
-    result with_int(int64_t v);
-    result with_uint(uint64_t v);
-    result with_float(double v);
-    result with_string(std::string_view v);
-    result push_mapping();
-    result push_sequence();
+    builder& with_none();
+    builder& with_bool(bool v);
+    builder& with_int(int64_t v);
+    builder& with_uint(uint64_t v);
+    builder& with_float(double v);
+    builder& with_string(std::string_view v);
+    builder& push_mapping();
+    builder& push_sequence();
 
-    result pop();
+    builder& pop();
 
-    void flush();
+    builder& flush();
 
   private:
     class impl;
@@ -42,7 +45,7 @@ class builder {
 };
 
 template <typename T>
-auto builder::with(T&& v) -> result {
+builder& builder::value(T&& v) {
     using U = std::decay_t<T>;
 
     if constexpr(std::is_void_v<U> || std::is_empty_v<U>) {
@@ -58,7 +61,7 @@ auto builder::with(T&& v) -> result {
     } else if constexpr(std::is_convertible_v<U, std::string_view>) {
         return with_string(std::forward<T>(v));
     } else {
-        return result::err("no overload available");
+        throw builder_error("no overload available");
     }
 }
 

@@ -11,8 +11,6 @@ using namespace std;
 
 class builder::impl {
   public:
-    using result = results::result<impl*>;
-
     impl(ostream& out, bool compact)
       : d_out(out)
       , d_compact(compact) {
@@ -22,137 +20,115 @@ class builder::impl {
         flush();
     }
 
-    result key(string_view k) {
-        return with_key(k);
+    void key(string_view key) {
+        if(!d_expect_key) {
+            throw builder_error("not expecting a key");
+        }
+
+        in_mapping();
+        comma();
+
+        d_out << quoted(key);
+        d_out << (d_compact ? ":" : ": ");
+        d_needscomma = false;
+        d_expect_key = false;
     }
 
-    result with_none() {
-        return scalar("null");
+    void with_none() {
+        scalar("null");
     }
 
-    result with_bool(bool v) {
+    void with_bool(bool v) {
         d_out << boolalpha;
-        return scalar(v);
+        scalar(v);
     }
 
-    result with_int(int64_t v) {
-        return scalar(v);
+    void with_int(int64_t v) {
+        scalar(v);
     }
 
-    result with_uint(uint64_t v) {
-        return scalar(v);
+    void with_uint(uint64_t v) {
+        scalar(v);
     }
 
-    result with_float(double v) {
+    void with_float(double v) {
         d_out.precision(std::numeric_limits<double>::max_digits10);
-        return scalar(v);
+        scalar(v);
     }
 
-    result with_string(std::string_view v) {
-        return scalar(quoted(v));
+    void with_string(std::string_view v) {
+        scalar(quoted(v));
     }
 
-    result push_mapping() {
-        return expect_value()
-            .map([](auto* t) { return t->do_mapping(); });
+    void push_mapping() {
+        expect_value();
+        d_expect_key = true;
+        push('{', '}');
     }
 
-    result push_sequence() {
-        return expect_value()
-            .map([](auto* t) { return t->do_sequence(); });
+    void push_sequence() {
+        expect_value();
+        d_expect_key = false;
+        push('[', ']');
     }
 
-    result pop() {
+    void pop() {
         if(d_stack.empty()) {
-            return result::err("can not pop an empty stack");
+            throw builder_error("can not pop an empty stack");
         }
         auto c = d_stack.top();
         d_stack.pop();
         newline();
         d_out << c;
 
-        in_mapping()
-                .map([this](auto) { d_expect_key = true; return 0; });
-
-        return result::ok(this);
+        if(is_mapping()) {
+            d_expect_key = true;
+        }
     }
 
     void flush() {
         while(!d_stack.empty()) {
-            pop().unwrap();
+            pop();
         }
     }
 
   private:
+    bool is_mapping() const {
+        return !d_stack.empty() && d_stack.top() == '}';
+    }
+
     template <typename T>
-    result scalar(const T& v) {
-        return expect_value()
-            .map([this, &v](auto* t) {
-                assert(this == t);
+    void scalar(const T& v) {
+        expect_value();
 
-                comma();
+        comma();
 
-                d_out << v;
-                d_needscomma = true;
+        d_out << v;
+        d_needscomma = true;
 
-                in_mapping()
-                        .map([this](auto) { d_expect_key = true; return 0; });
-
-                return this;
-            });
-    }
-
-    result with_key(string_view key) {
-        if (!d_expect_key) {
-            return result::err("not expecting a key");
-        }
-
-        return in_mapping()
-            .map([this, key](auto* t) {
-                assert(this == t);
-                comma();
-
-                d_out << quoted(key);
-                d_out << (d_compact ? ":" : ": ");
-                d_needscomma = false;
-                d_expect_key = false;
-                return this;
-            });
-    }
-
-    result expect_value() {
-        if(!d_stack.empty() && d_stack.top() == '}' && d_expect_key) {
-            return result::err("not expecting a value");
-        } else {
-            return result::ok(this);
+        if(is_mapping()) {
+            d_expect_key = true;
         }
     }
 
-    result in_mapping() {
-        if(d_stack.empty() || d_stack.top() != '}') {
-            return result::err("top of the stack is not a mapping");
-        } else {
-            return result::ok(this);
+    void expect_value() {
+        if(is_mapping() && d_expect_key) {
+            throw builder_error("not expecting a value");
         }
     }
 
-    impl* do_mapping() {
-        d_expect_key = true;
-        return push('{', '}');
+    void in_mapping() {
+        if(!is_mapping()) {
+            throw builder_error("top of the stack is not a mapping");
+        }
     }
 
-    impl* do_sequence() {
-        d_expect_key = false;
-        return push('[', ']');
-    }
-
-    impl* push(char b, char e) {
+    void push(char b, char e) {
         comma();
         d_out << b;
         d_stack.push(e);
         newline();
         d_needscomma = false;
-        return this;
     }
 
     void comma() {
@@ -186,59 +162,70 @@ builder::builder(ostream& out, bool compact)
 builder::~builder() {
 }
 
-builder::result builder::key(string_view k) {
+builder& builder::key(string_view k) {
     assert(d_pimpl);
-    return d_pimpl->key(k).map([this](auto) { return this; });
+    d_pimpl->key(k);
+    return *this;
 }
 
-builder::result builder::with_none() {
+builder& builder::with_none() {
     assert(d_pimpl);
-    return d_pimpl->with_none().map([this](auto) { return this; });
+    d_pimpl->with_none();
+    return *this;
 }
 
-builder::result builder::with_bool(bool v) {
+builder& builder::with_bool(bool v) {
     assert(d_pimpl);
-    return d_pimpl->with_bool(v).map([this](auto) { return this; });
+    d_pimpl->with_bool(v);
+    return *this;
 }
 
-builder::result builder::with_int(int64_t v) {
+builder& builder::with_int(int64_t v) {
     assert(d_pimpl);
-    return d_pimpl->with_int(v).map([this](auto) { return this; });
+    d_pimpl->with_int(v);
+    return *this;
 }
 
-builder::result builder::with_uint(uint64_t v) {
+builder& builder::with_uint(uint64_t v) {
     assert(d_pimpl);
-    return d_pimpl->with_uint(v).map([this](auto) { return this; });
+    d_pimpl->with_uint(v);
+    return *this;
 }
 
-builder::result builder::with_float(double v) {
+builder& builder::with_float(double v) {
     assert(d_pimpl);
-    return d_pimpl->with_float(v).map([this](auto) { return this; });
+    d_pimpl->with_float(v);
+    return *this;
 }
 
-builder::result builder::with_string(string_view v) {
+builder& builder::with_string(string_view v) {
     assert(d_pimpl);
-    return d_pimpl->with_string(v).map([this](auto) { return this; });
+    d_pimpl->with_string(v);
+    return *this;
 }
 
-builder::result builder::push_mapping() {
+builder& builder::push_mapping() {
     assert(d_pimpl);
-    return d_pimpl->push_mapping().map([this](auto) { return this; });
+    d_pimpl->push_mapping();
+    return *this;
 }
 
-builder::result builder::push_sequence() {
+builder& builder::push_sequence() {
     assert(d_pimpl);
-    return d_pimpl->push_sequence().map([this](auto) { return this; });
+    d_pimpl->push_sequence();
+    return *this;
 }
 
-builder::result builder::pop() {
+builder& builder::pop() {
     assert(d_pimpl);
-    return d_pimpl->pop().map([this](auto) { return this; });
+    d_pimpl->pop();
+    return *this;
 }
 
-void builder::flush() {
+builder& builder::flush() {
     assert(d_pimpl);
     d_pimpl->flush();
+    return *this;
 }
 
 } // namespace kjson
