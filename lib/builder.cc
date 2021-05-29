@@ -27,6 +27,7 @@ class builder::impl {
 
         in_mapping();
         comma();
+        newline();
 
         d_out << quoted(key);
         d_out << (d_compact ? ":" : ": ");
@@ -84,6 +85,7 @@ class builder::impl {
         if(is_mapping()) {
             d_expect_key = true;
         }
+        d_needscomma = true;
     }
 
     void flush() {
@@ -102,6 +104,9 @@ class builder::impl {
         expect_value();
 
         comma();
+        if (!is_mapping()) { // kludge
+            newline();
+        }
 
         d_out << v;
         d_needscomma = true;
@@ -124,17 +129,25 @@ class builder::impl {
     }
 
     void push(char b, char e) {
+        bool needs_newline = !d_compact && !d_stack.empty() && !is_mapping();
+        bool needs_space = !d_compact && d_needscomma && !needs_newline;
+
         comma();
+        if (needs_space) {
+            d_out << ' ';
+        }
+        if (needs_newline) {
+            newline();
+        }
         d_out << b;
         d_stack.push(e);
-        newline();
+
         d_needscomma = false;
     }
 
     void comma() {
         if(d_needscomma) {
             d_out << ',';
-            newline();
         }
     }
 

@@ -230,6 +230,31 @@ TEST(builder, pretty) {
 })", stream.str());
 }
 
+TEST(builder, empty_formatting) {
+    ostringstream stream;
+    builder(stream, false)
+            .push_mapping()
+            .key("v").push_sequence()
+            .push_mapping()
+            .key("v").push_sequence().pop()
+            .pop()
+            .push_mapping()
+            .key("v").push_sequence().pop()
+            .flush();
+    EXPECT_EQ(R"({
+  "v": [
+    {
+      "v": [
+      ]
+    },
+    {
+      "v": [
+      ]
+    }
+  ]
+})", stream.str());
+}
+
 TEST(builder, check_bad_key) {
     ostringstream stream;
 
