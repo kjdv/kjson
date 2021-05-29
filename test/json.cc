@@ -1,9 +1,9 @@
 #include "json.hh"
+#include <algorithm>
 #include <composite/make.hh>
 #include <gtest/gtest.h>
-#include <rapidcheck/gtest.h>
-#include <algorithm>
 #include <limits>
+#include <rapidcheck/gtest.h>
 
 namespace kjson {
 namespace {
@@ -11,53 +11,51 @@ namespace {
 using namespace std;
 using namespace composite;
 
-TEST(toplevel, load)
-{
-  const string document =
-      "{\n"
-      "  \"key\" : \"value\","
-      "  \"list\" : [\n"
-      "    \"string\",\n"
-      "    1,\n"
-      "    true,\n"
-      "    {\"pi\":3.14,\"e\":2.71},\n"
-      "  ],\n"
-      "  \"foo\" : \"bar\"\n"
-      "}";
+TEST(toplevel, load) {
+    const string document =
+        "{\n"
+        "  \"key\" : \"value\","
+        "  \"list\" : [\n"
+        "    \"string\",\n"
+        "    -1,\n"
+        "    true,\n"
+        "    {\"pi\":3.14,\"e\":2.71},\n"
+        "  ],\n"
+        "  \"foo\" : \"bar\"\n"
+        "}";
 
-  auto expected = make_map(
-      "key", "value",
-      "list", make_seq(
-          "string",
-          1,
-          true,
-          make_map(
-              "pi", 3.14,
-              "e", 2.71)),
-      "foo", "bar");
+    auto expected = make_map(
+        "key", "value", "list", make_seq("string", -1, true, make_map("pi", 3.14, "e", 2.71)), "foo", "bar");
 
-  auto actual = load(document);
+    auto actual = load(document);
 
-  EXPECT_EQ(expected, actual.unwrap());
+    EXPECT_EQ(expected, actual.unwrap());
 }
 
-TEST(toplevel, incomplete)
-{
-  // should not block
-  const string document =
-      "{\n"
-      "  \"key\" : \"value\","
-      "  \"list\" : [\n"
-      "    \"string\",\n"
-      "    1,\n";
+TEST(toplevel, incomplete) {
+    // should not block
+    const string document =
+        "{\n"
+        "  \"key\" : \"value\","
+        "  \"list\" : [\n"
+        "    \"string\",\n"
+        "    1,\n";
 
-  auto actual = load(document);
-  EXPECT_TRUE(actual.is_err());
+    auto actual = load(document);
+    EXPECT_TRUE(actual.is_err());
+}
+
+TEST(toplevel, uint) {
+    ::composite::composite doc((uint64_t)0xffffffffffffffff);
+    stringstream           stream;
+    dump(doc, stream, true);
+
+    EXPECT_EQ("18446744073709551615", stream.str());
 }
 
 template <typename T>
 bool check_marshalling(const T& orig, bool compact) {
-    auto doc = make(T(orig));
+    auto         doc = make(T(orig));
     stringstream stream;
     dump(doc, stream, compact);
 
@@ -69,7 +67,6 @@ TEST(toplevel, marshall_numeric_boundaries) {
     EXPECT_TRUE(check_marshalling(numeric_limits<int64_t>::max(), true));
     EXPECT_TRUE(check_marshalling(numeric_limits<int64_t>::min(), true));
 
-    // note: uint64_t has a known limititation w.r.t. on the wire format, but we can check and test whether we can convert back and forth from it
     EXPECT_TRUE(check_marshalling(numeric_limits<uint64_t>::max(), true));
     EXPECT_TRUE(check_marshalling(numeric_limits<uint64_t>::min(), true));
 
@@ -115,19 +112,19 @@ RC_GTEST_PROP(toplevel, marshalling_sequence, (vector<int> orig, bool compact)) 
     stringstream stream;
     dump(doc, stream, compact);
 
-    auto seq = load(stream).expect("invalid json").as<sequence>();
+    auto        seq = load(stream).expect("invalid json").as<sequence>();
     vector<int> actual;
     transform(seq.begin(), seq.end(), back_inserter(actual), [](const ::composite::composite& item) { return item.to<int>(); });
     RC_ASSERT(orig == actual);
 }
 
 RC_GTEST_PROP(toplevel, marshalling_mapping, (map<string, double> orig, bool compact)) {
-    if (!all_of(orig.begin(), orig.end(), [](auto&& kv) { return !kv.first.empty(); })) {
+    if(!all_of(orig.begin(), orig.end(), [](auto&& kv) { return !kv.first.empty(); })) {
         return;
     }
 
     auto doc_as_map = mapping();
-    for (auto &&kv : orig) {
+    for(auto&& kv : orig) {
         doc_as_map.insert(make_pair(kv.first, make(kv.second)));
     }
     ::composite::composite doc(move(doc_as_map));
@@ -135,14 +132,14 @@ RC_GTEST_PROP(toplevel, marshalling_mapping, (map<string, double> orig, bool com
     stringstream stream;
     dump(doc, stream, compact);
 
-    auto m = load(stream).expect("invalid json").as<mapping>();
+    auto                m = load(stream).expect("invalid json").as<mapping>();
     map<string, double> actual;
-    for (auto&& kv : m) {
+    for(auto&& kv : m) {
         actual.insert(make_pair(kv.first, kv.second.to<double>()));
     }
 
     RC_ASSERT(orig == actual);
 }
 
-}
-}
+} // namespace
+} // namespace kjson

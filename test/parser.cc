@@ -9,197 +9,158 @@ namespace {
 using namespace std;
 using namespace composite;
 
-TEST(parser, plain_int)
-{
-  auto expected = make(148);
-  istringstream input(" 148 ");
-
-  auto actual = parse(input);
-
-  EXPECT_EQ(expected, actual.unwrap());
+::composite::composite parse(string input) {
+    istringstream stream(input);
+    to_composite  v;
+    parse(stream, v).unwrap();
+    return v.collect();
 }
 
-TEST(parser, plain_float)
-{
-  auto expected = make(3.14);
-  istringstream input(" 3.14 ");
+TEST(parser, plain_uint) {
+    auto expected = make((unsigned)148);
+    auto actual   = parse(" 148 ");
 
-  auto actual = parse(input);
-
-  EXPECT_EQ(expected, actual.unwrap());
+    EXPECT_EQ(expected, actual);
 }
 
+TEST(parser, plain_int) {
+    auto expected = make(148);
+    auto actual   = parse(" 148 ");
 
-TEST(parser, plain_string)
-{
-  auto expected = make("blah blah");
-  istringstream input("\"blah blah\"");
-
-  auto actual = parse(input);
-
-  EXPECT_EQ(expected, actual.unwrap());
+    EXPECT_EQ(expected.as<int>(), actual.to<int>());
 }
 
-TEST(parser, plain_true)
-{
-  auto expected = make(true);
-  istringstream input("true");
+TEST(parser, plain_negative_int) {
+    auto expected = make(-148);
+    auto actual   = parse(" -148 ");
 
-  auto actual = parse(input);
-
-  EXPECT_EQ(expected, actual.unwrap());
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, plain_false)
-{
-  auto expected = make(false);
-  istringstream input("false");
+TEST(parser, plain_float) {
+    auto expected = make(3.14);
+    auto actual   = parse(" 3.14 ");
 
-  auto actual = parse(input);
-
-  EXPECT_EQ(expected, actual.unwrap());
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, plain_null)
-{
-  auto expected = make(none{});
-  istringstream input("null");
+TEST(parser, plain_string) {
+    auto expected = make("blah blah");
+    auto actual   = parse(R"("blah blah)");
 
-  auto actual = parse(input);
-
-  EXPECT_EQ(expected, actual.unwrap());
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, sequence)
-{
-  auto expected = make_seq(1, 2, 3);
-  const string input = "[1, 2, 3]";
+TEST(parser, plain_true) {
+    auto expected = make(true);
+    auto actual   = parse("true");
 
-  istringstream stream(input);
-  auto actual = parse(stream);
-
-  EXPECT_EQ(expected, actual.unwrap());
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, sequence_empty)
-{
-  auto expected = make_seq();
-  const string input = "[]";
+TEST(parser, plain_false) {
+    auto expected = make(false);
+    auto actual   = parse("false");
 
-  istringstream stream(input);
-  auto actual = parse(stream);
-
-  EXPECT_EQ(expected, actual.unwrap());
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, sequence_trailing_comma)
-{
-  auto expected = make_seq(1, 2, 3);
-  const string input = "[1, 2, 3, ]";
+TEST(parser, plain_null) {
+    auto expected = make(::composite::none{});
+    auto actual   = parse("null");
 
-  istringstream stream(input);
-  auto actual = parse(stream);
-
-  EXPECT_EQ(expected, actual.unwrap());
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, sequence_nested)
-{
-  auto expected = make_seq(1, make_seq(2, 3), 4, 5);
-  const string input = "[1, [2, 3], 4, 5]";
+TEST(parser, sequence) {
+    auto expected = make_seq((unsigned)1, (unsigned)2, (unsigned)3);
+    auto actual   = parse("[1, 2, 3]");
 
-  istringstream stream(input);
-  auto actual = parse(stream);
-
-  EXPECT_EQ(expected, actual.unwrap());
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, mapping)
-{
-  auto expected = make_map("key", "value");
-  const string input = "{\"key\": \"value\"}";
+TEST(parser, sequence_empty) {
+    auto expected = make_seq();
+    auto actual   = parse("[]");
 
-  istringstream stream(input);
-  auto actual = parse(stream);
-
-  EXPECT_EQ(expected, actual.unwrap());
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, mapping_empty)
-{
-  auto expected = make_map();
-  const string input = "{ }";
+TEST(parser, sequence_trailing_comma) {
+    auto expected = make_seq(-1, -2, -3);
+    auto actual   = parse("[-1, -2, -3, ]");
 
-  istringstream stream(input);
-  auto actual = parse(stream);
-
-  EXPECT_EQ(expected, actual.unwrap());
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, mapping_trailing_comma)
-{
-  auto expected = make_map("key", "value", "pi", 3.1459, "e", 2.7182);
-  const string input = "{\"key\": \"value\", \"pi\" : 3.145900, \"e\" : 2.718200, }";
+TEST(parser, sequence_nested) {
+    auto expected = make_seq(-1, make_seq(-2, -3), -4, -5);
+    auto actual   = parse("[-1, [-2, -3], -4, -5]");
 
-  istringstream stream(input);
-  auto actual = parse(stream);
-
-  EXPECT_EQ(expected, actual.unwrap());
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, mapping_nested)
-{
-  auto expected = make_map(
-      "key", "value",
-      "pi", 3.1459,
-      "nest", make_map(
-          "one", 1,
-          "two", 2,
-          "three", 3),
-      "e", 2.7182);
+TEST(parser, mapping) {
+    auto expected = make_map("key", "value");
+    auto actual   = parse(R"({"key": "value"})");
 
-  const string input =
-      "{\"key\": \"value\",\n"
-      "  \"pi\" : 3.145900,\n"
-      "  \"nest\" : {\n"
-      "    \"one\" : 1,\n"
-      "    \"two\" : 2,\n"
-      "    \"three\" : 3\n"
-      "  },\n"
-      "  \"e\" : 2.718200\n"
-      "}";
-
-  istringstream stream(input);
-  auto actual = parse(stream);
-
-  EXPECT_EQ(expected, actual.unwrap());
-
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, bad_mapping)
-{
-  istringstream stream("{");
-  EXPECT_TRUE(parse(stream).is_err());
+TEST(parser, mapping_empty) {
+    auto expected = make_map();
+    auto actual   = parse("{ }");
+
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, bad_sequence)
-{
-  istringstream stream("[1,");
-  EXPECT_TRUE(parse(stream).is_err());
+TEST(parser, mapping_trailing_comma) {
+    auto expected = make_map("key", "value", "pi", 3.1459, "e", 2.7182);
+    auto actual   = parse(R"({"key": "value", "pi" : 3.145900, "e" : 2.718200, })");
+
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, no_document)
-{
-  istringstream stream("<>");
-  EXPECT_TRUE(parse(stream).is_err());
+TEST(parser, mapping_nested) {
+    auto expected = make_map(
+        "key", "value", "pi", 3.1459, "nest", make_map("one", -1, "two", -2, "three", -3), "e", 2.7182);
+    auto actual = parse(R"({
+      "key": "value",
+      "pi" : 3.145900,
+      "nest" : {
+         "one" : -1,
+         "two" : -2,
+         "three" : -3
+      },
+      "e" : 2.718200
+   })");
+
+    EXPECT_EQ(expected, actual);
 }
 
-TEST(parser, bad_values)
-{
-  istringstream stream("{1,2,3}");
-  EXPECT_TRUE(parse(stream).is_err());
+TEST(parser, bad_mapping) {
+    to_composite  v;
+    istringstream stream("{");
+    EXPECT_TRUE(parse(stream, v).is_err());
 }
 
+TEST(parser, bad_sequence) {
+    to_composite  v;
+    istringstream stream("[1,");
+    EXPECT_TRUE(parse(stream, v).is_err());
+}
 
+TEST(parser, no_document) {
+    to_composite  v;
+    istringstream stream("<>");
+    EXPECT_TRUE(parse(stream, v).is_err());
 }
+
+TEST(parser, bad_values) {
+    to_composite  v;
+    istringstream stream("{1,2,3}");
+    EXPECT_TRUE(parse(stream, v).is_err());
 }
+
+} // namespace
+} // namespace kjson

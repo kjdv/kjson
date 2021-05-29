@@ -1,7 +1,7 @@
 #include "json.hh"
 #include "json_builder.hh"
-#include <composite/make.hh>
 #include <composite/composite.hh>
+#include <composite/make.hh>
 #include <gtest/gtest.h>
 #include <sstream>
 
@@ -12,50 +12,44 @@ using namespace std;
 
 namespace {
 
-struct json_testcase
-{
-  const string input;
-  const string output;
+struct json_testcase {
+    const string input;
+    const string output;
 };
 
-inline ostream& operator<<(ostream& out, json_testcase const& tc)
-{
-  return out << "input: " << tc.input << "\noutput:" << tc.output << '\n';
+inline ostream& operator<<(ostream& out, json_testcase const& tc) {
+    return out << "input: " << tc.input << "\noutput:" << tc.output << '\n';
 }
 
-class json_compact_builder_test : public testing::TestWithParam<json_testcase>
-{
-  document d_data;
+class json_compact_builder_test : public testing::TestWithParam<json_testcase> {
+    document d_data;
 
-public:
-  json_compact_builder_test()
-    : d_data(load(GetParam().input).unwrap())
-  {}
+  public:
+    json_compact_builder_test()
+      : d_data(load(GetParam().input).unwrap()) {
+    }
 
-  document const& data() const
-  {
-    return d_data;
-  }
+    document const& data() const {
+        return d_data;
+    }
 };
 
-TEST_P(json_compact_builder_test, writing)
-{
-  ostringstream        stream;
-  json_builder jb(stream, true);
-  data().visit(jb);
+TEST_P(json_compact_builder_test, writing) {
+    ostringstream stream;
+    json_builder  jb(stream, true);
+    data().visit(jb);
 
-  EXPECT_EQ(GetParam().output, stream.str());
+    EXPECT_EQ(GetParam().output, stream.str());
 }
 
-TEST_P(json_compact_builder_test, reading)
-{
-  ostringstream        stream;
-  json_builder jb(stream, true);
-  data().visit(jb);
+TEST_P(json_compact_builder_test, reading) {
+    ostringstream stream;
+    json_builder  jb(stream, true);
+    data().visit(jb);
 
-  auto actual = load(stream.str());
+    auto actual = load(stream.str());
 
-  EXPECT_EQ(data(), actual.unwrap());
+    EXPECT_EQ(data(), actual.unwrap());
 }
 
 json_testcase json_testcases[] = {
@@ -75,7 +69,7 @@ json_testcase json_testcases[] = {
 INSTANTIATE_TEST_SUITE_P(test_json_compact_builder,
                          json_compact_builder_test,
                          testing::ValuesIn(json_testcases));
-}
+} // namespace
 
-}
-}
+} // namespace
+} // namespace kjson

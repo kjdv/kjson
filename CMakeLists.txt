@@ -14,10 +14,11 @@ enable_testing()
 find_package(Results CONFIG REQUIRED)
 find_package(Kb64 CONFIG REQUIRED)
 find_package(Composite CONFIG REQUIRED)
-
+find_package(benchmark CONFIG REQUIRED)
 
 add_subdirectory(lib)
 add_subdirectory(test)
+add_subdirectory(benchmarks)
 
 # install rules
 install(TARGETS kjson
