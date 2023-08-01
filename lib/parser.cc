@@ -105,11 +105,11 @@ maybe_error parser::mapping(const maybe_key& key) {
                 [this] { d_visitor.push_mapping(); });
             members();
             d_visitor.pop();
-            return maybe_error::ok(0);
+            return maybe_error::ok(std::monostate{});
         })
         .and_then([this](auto) {
             return match_and_consume(token::type_t::e_end_mapping)
-                .map([](auto) { return 0; });
+                .map([](auto) { return std::monostate{}; });
         });
 }
 
@@ -125,7 +125,7 @@ maybe_error parser::sequence(const maybe_key& key) {
         })
         .and_then([this](auto) {
             return match_and_consume(token::type_t::e_end_sequence)
-                .map([](auto) { return 0; });
+                .map([](auto) { return std::monostate{}; });
         });
 }
 
@@ -142,7 +142,7 @@ maybe_error parser::extract_value(const maybe_key& key) {
             [this, &c](string_view k) { d_visitor.scalar(k, std::move(c)); },
             [this, &c] { d_visitor.scalar(std::move(c)); });
         return advance()
-            .map([](auto&) { return 0; });
+            .map([](auto&) { return std::monostate{}; });
     };
 
     switch(current().tok) {

@@ -22,7 +22,7 @@ result load(string_view input) {
 
 maybe_error load(istream& input, visitor& v) {
     return parse(input, v)
-        .map([](auto&) { return 1; });
+        .map([](auto&) { return std::monostate{}; });
 }
 
 maybe_error load(string_view input, visitor& v) {

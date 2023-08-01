@@ -10,7 +10,7 @@ namespace kjson {
 
 using document    = composite::composite;
 using result      = results::result<document>;
-using maybe_error = results::result<int>;
+using maybe_error = results::result<std::monostate>;
 
 class visitor;
 
