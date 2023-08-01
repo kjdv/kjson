@@ -17,25 +17,28 @@ T from_string(const string& v);
 
 template <>
 uint64_t from_string<uint64_t>(const string& v) {
-    static_assert(sizeof(decltype(std::strtoull(nullptr, nullptr, 10))) >= sizeof(uint64_t), "unsigned long long not long enough");
-
     char* end;
+
+    static_assert(sizeof(decltype(std::strtoull("", &end, 10))) >= sizeof(uint64_t), "unsigned long long not long enough");
+
     return std::strtoull(v.data(), &end, 10);
 }
 
 template <>
 int64_t from_string<int64_t>(const string& v) {
-    static_assert(sizeof(decltype(std::strtoll(nullptr, nullptr, 10))) >= sizeof(uint64_t), "long long not long enough");
-
     char* end;
+
+    static_assert(sizeof(decltype(std::strtoll("", &end, 10))) >= sizeof(uint64_t), "long long not long enough");
+
     return std::strtoll(v.data(), &end, 10);
 }
 
 template <>
 double from_string<double>(const string& v) {
-    static_assert(sizeof(decltype(std::strtod(nullptr, nullptr))) >= sizeof(double), "not long enough");
-
     char* end;
+
+    static_assert(sizeof(decltype(std::strtod("", &end))) >= sizeof(double), "not long enough");
+
     return std::strtod(v.data(), &end);
 }
 
@@ -134,10 +137,10 @@ maybe_error parser::value(const maybe_key& key) {
 
 maybe_error parser::extract_value(const maybe_key& key) {
     auto ok = [this, &key](auto&& v) {
-        scalar_t c(move(v));
+        scalar_t c(std::move(v));
         key.match(
-            [this, &c](string_view k) { d_visitor.scalar(k, move(c)); },
-            [this, &c] { d_visitor.scalar(move(c)); });
+            [this, &c](string_view k) { d_visitor.scalar(k, std::move(c)); },
+            [this, &c] { d_visitor.scalar(std::move(c)); });
         return advance()
             .map([](auto&) { return 0; });
     };
@@ -178,7 +181,7 @@ maybe_error parser::kv_pair() {
     if(current().tok != token::type_t::e_string)
         return maybe_error::err("key is not a string");
 
-    string key = move(d_token.value);
+    string key = std::move(d_token.value);
     advance();
 
     return match_and_consume(token::type_t::e_mapper)
@@ -193,7 +196,7 @@ composite::composite from_scalar(scalar_t v) {
         if constexpr(std::is_same_v<T, kjson::none>) {
             return composite::composite{};
         } else {
-            return composite::make(forward<T>(item));
+            return composite::make(std::forward<T>(item));
         }
     },
                  v);
